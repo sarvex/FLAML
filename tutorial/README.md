@@ -9,7 +9,7 @@ Duration: 3 hours
 
 For the most up-to-date information, see the [SIGKDD'22 Program Agenda](https://www.appsheet.com/start/52fdb507-2f8c-41d8-a982-b6bd18933ba8#appName=KDD2022TutorialsRoomFinal-1001136659&group=%5B%5D&row=81&sort=%5B%7B%22Column%22%3A%22Day+Time%22%2C%22Order%22%3A%22Ascending%22%7D%5D&table=KDD+2022+Tutorials&view=KDD2022Tutorials0805_Detail)
 
-## [Tutorial Slides](https://1drv.ms/b/s!Ao3suATqM7n7ioQFMDuLm0QrRAeqUw?e=x9Q7IB)
+## [Tutorial Slides](https://1drv.ms/b/s!Ao3suATqM7n7ioQF8xT8BbRdyIf_Ww?e=qQysIf)
 
 ## What Will You Learn?
 
