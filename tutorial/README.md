@@ -1,30 +1,48 @@
-# KDD 2022 Hands-on Tutorial about FLAML
+# KDD 2022 Hands-on Tutorial - Automated Machine Learning & Tuning with FLAML
 
-## Agenda
+## Session Information
 
-Time: 08.16, Tuesday, AM, ET
-
+Date: August 16, 2022
+Time: 9:30 AM ET
+Location: 101
 Duration: 3 hours
 
-First half of the tutorial:
+For the most up-to-date information, see the [SIGKDD'22 Program Agenda](https://www.appsheet.com/start/52fdb507-2f8c-41d8-a982-b6bd18933ba8#appName=KDD2022TutorialsRoomFinal-1001136659&group=%5B%5D&row=81&sort=%5B%7B%22Column%22%3A%22Day+Time%22%2C%22Order%22%3A%22Ascending%22%7D%5D&table=KDD+2022+Tutorials&view=KDD2022Tutorials0805_Detail)
+
+## [Tutorial Slides](https://1drv.ms/b/s!Ao3suATqM7n7ioQF8xT8BbRdyIf_Ww?e=qQysIf)
+
+## What Will You Learn?
+
+- What FLAML is and how to use it to find accurate ML models with low computational resources for common machine learning tasks
+- How to leverage the flexible and rich customization choices to:
+  - Finish the last mile for deployment
+  - Create new applications
+- Code examples, demos, and use cases
+- Research & development opportunities
+
+## Session Agenda
+
+### Part 1
+
 - Overview of AutoML and FLAML
 - Task-oriented AutoML with FLAML
-    - [Notebook: A classification task with AutoML](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_classification.ipynb)
-    - [Notebook: A regression task with AuotML using LightGBM as the learner](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_lightgbm.ipynb)
-- ML.Net demo
+    - [Notebook: A classification task with AutoML](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_classification.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/automl_classification.ipynb)
+    - [Notebook: A regression task with AuotML using LightGBM as the learner](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_lightgbm.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/automl_lightgbm.ipynb)
+- [ML.NET demo](https://docs.microsoft.com/dotnet/machine-learning/tutorials/predict-prices-with-model-builder)
 - Tune user defined functions with FLAML
-    - [Notebook: Basic tuning procedures and advanced tuning options](https://github.com/microsoft/FLAML/blob/tutorial/notebook/tune_demo.ipynb)
-    - [Notebook: Tune pytorch](https://github.com/microsoft/FLAML/blob/tutorial/notebook/tune_pytorch.ipynb)
+    - [Notebook: Basic tuning procedures and advanced tuning options](https://github.com/microsoft/FLAML/blob/tutorial/notebook/tune_demo.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/tune_demo.ipynb)
+    - [Notebook: Tune pytorch](https://github.com/microsoft/FLAML/blob/tutorial/notebook/tune_pytorch.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/tune_pytorch.ipynb)
 - Q & A
 
-Second half of the tutorial:
+### Part 2
+
 - Zero-shot AutoML
-    - [Notebook: Zeroshot AutoML](https://github.com/microsoft/FLAML/blob/tutorial/notebook/zeroshot_lightgbm.ipynb)
+    - [Notebook: Zeroshot AutoML](https://github.com/microsoft/FLAML/blob/tutorial/notebook/zeroshot_lightgbm.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/zeroshot_lightgbm.ipynb)
 - Time series forecasting
-    - [Notebook: AutoML for Time Series Forecast tasks](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_time_series_forecast.ipynb)
+    - [Notebook: AutoML for Time Series Forecast tasks](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_time_series_forecast.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/automl_time_series_forecast.ipynb)
 - Natural language processing
-    - [Notebook: AutoML for NLP tasks](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_nlp.ipynb)
+    - [Notebook: AutoML for NLP tasks](https://github.com/microsoft/FLAML/blob/tutorial/notebook/automl_nlp.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/automl_nlp.ipynb)
 - Online AutoML
-    - [Notebook: Online AutoML with Vowpal Wabbit](https://github.com/microsoft/FLAML/blob/tutorial/notebook/autovw.ipynb)
+    - [Notebook: Online AutoML with Vowpal Wabbit](https://github.com/microsoft/FLAML/blob/tutorial/notebook/autovw.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial/notebook/autovw.ipynb)
 - Fair AutoML
 - Challenges and open problems
