@@ -2,9 +2,9 @@ name: test
 
 on:
   push:
-    branches: ['benchmark-test']
+    branches: ['benchmark']
   pull_request:
-    branches: ['benchmark-test']
+    branches: ['benchmark']
 
 
 jobs:
