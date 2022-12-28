@@ -22,4 +22,5 @@ jobs:
     #   working-directory: cli
     #   continue-on-error: true
     - name: run job
-      run: bash  ../../test.sh
+      run: bash test.sh
+      working-directory: cli
