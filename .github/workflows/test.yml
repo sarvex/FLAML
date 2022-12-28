@@ -1,0 +1,25 @@
+name: test
+
+on:
+  push:
+    branches: ['benchmark-test']
+  pull_request:
+    branches: ['benchmark-test']
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: check out repo
+      uses: actions/checkout@v2
+    - name: azure login
+      uses: azure/login@v1
+      with:
+        creds: ${{secrets.AZURE_CREDENTIALS}}
+    # - name: setup
+    #   run: bash setup.sh
+    #   working-directory: cli
+    #   continue-on-error: true
+    - name: run job
+      run: bash  ../../test.sh
