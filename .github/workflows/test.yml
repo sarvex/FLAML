@@ -17,14 +17,13 @@ jobs:
       uses: azure/login@v1
       with:
         creds: ${{secrets.AZURE_CREDENTIALS}}
-    # - name: setup
-    #   run: bash setup.sh
-    #   working-directory: cli
-    #   continue-on-error: true
     - name: run job 1
       run: bash test.sh
       working-directory: cli
-
+    - name: setup az
+      run: bash setup.sh
+      working-directory: cli
+      continue-on-error: true
     - name: run job 2
-      run: bash ../run-job.sh hello_world.yml
+      run: bash -x ../run-job.sh hello_world.yml
       working-directory: cli/jobs
