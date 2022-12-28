@@ -21,6 +21,10 @@ jobs:
     #   run: bash setup.sh
     #   working-directory: cli
     #   continue-on-error: true
-    - name: run job
+    - name: run job 1
       run: bash test.sh
       working-directory: cli
+
+    - name: run job 2
+      run: bash ../run-job.sh hello_world.yml
+      working-directory: cli/jobs
