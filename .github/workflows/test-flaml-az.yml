@@ -1,10 +1,10 @@
-name: test
+name: test flaml from automlbenchmark
 
 on:
-  # push:
-  #   branches: ['benchmark']
-  # pull_request:
-  #   branches: ['benchmark']
+  push:
+    branches: ['benchmark']
+  pull_request:
+    branches: ['benchmark']
 
 
 jobs:
@@ -24,6 +24,6 @@ jobs:
       run: bash setup.sh
       working-directory: cli
       continue-on-error: true
-    - name: run job 2
-      run: bash -x ../run-job.sh hello_world.yml
-      working-directory: cli/jobs
+    - name: run flaml from automlbenchmark
+      run: bash setup_benchmark.sh
+      working-directory: cli
