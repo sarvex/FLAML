@@ -24,6 +24,9 @@ jobs:
       run: bash setup.sh
       working-directory: cli
       continue-on-error: true
-    - name: run flaml from automlbenchmark
-      run: bash setup_benchmark.sh
-      working-directory: cli
+    - name: run job on az
+      run: bash -x ../run-job.sh hello_world.yml
+      working-directory: cli/jobs
+    - name: run flaml from automlbenchmark on az
+      run: bash -x ../run-job.sh automlbenchmark.yml
+      working-directory: cli/jobs

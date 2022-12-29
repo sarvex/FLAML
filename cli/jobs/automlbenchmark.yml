@@ -1,0 +1,12 @@
+$schema: https://azuremlschemas.azureedge.net/latest/commandJob.schema.json
+command:
+echo "hello automlbenchmark"
+git clone https://github.com/qingyun-wu/automlbenchmark.git --branch flaml-az --depth 1
+cd automlbenchmark
+python3 -m venv ./venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+python3 runbenchmark.py flaml test
+environment:
+  image: library/python:latest
+compute: azureml:cpu-cluster
