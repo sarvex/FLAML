@@ -23,7 +23,7 @@ For the most up-to-date information, see the [AAAI'23 Program Agenda](https://aa
 - Code examples, demos, use cases
 - Research & development opportunities
 
-## Session Agenda (tentative)
+## Session Agenda
 
 ### **Part 1. Overview of FLAML**
 
