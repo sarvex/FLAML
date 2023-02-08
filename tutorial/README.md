@@ -2,7 +2,7 @@
 
 ## Session Information
 
-**Date and Time: February 8, 2023 at 2-6pm ET.
+**Date and Time**: February 8, 2023 at 2-6pm ET.
 
 Location: Walter E. Washington Convention Center, Washington DC, USA
 
