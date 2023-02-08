@@ -30,10 +30,13 @@ For the most up-to-date information, see the [AAAI'23 Program Agenda](https://aa
 - Overview of AutoML and FLAML
 - Basic usages of FLAML
     - Task-oriented AutoML
+        - [Documentation](https://microsoft.github.io/FLAML/docs/Use-Cases/Task-Oriented-AutoML)
         - [Notebook: A classification task with AutoML](https://github.com/microsoft/FLAML/blob/tutorial-aaai23/notebook/automl_classification.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial-aaai23/notebook/automl_classification.ipynb)
     - Tune User-Defined-functions with FLAML
+        - [Documentation](https://microsoft.github.io/FLAML/docs/Use-Cases/Tune-User-Defined-Function)
         - [Notebook: Tune user-defined function](https://github.com/microsoft/FLAML/blob/tutorial-aaai23/notebook/tune_demo.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial-aaai23/notebook/tune_demo.ipynb)
     - Zero-shot AutoML
+        - [Documentation](https://microsoft.github.io/FLAML/docs/Use-Cases/Zero-Shot-AutoML)
         - [Notebook: Zeroshot AutoML](https://github.com/microsoft/FLAML/blob/tutorial-aaai23/notebook/zeroshot_lightgbm.ipynb); [Open In Colab](https://colab.research.google.com/github/microsoft/FLAML/blob/tutorial-aaai23/notebook/zeroshot_lightgbm.ipynb)
 - [ML.NET demo](https://learn.microsoft.com/dotnet/machine-learning/tutorials/predict-prices-with-model-builder)
 
