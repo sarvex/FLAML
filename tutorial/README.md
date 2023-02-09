@@ -10,7 +10,7 @@ Duration: 4 hours (3.5 hours + 0.5 hour break)
 
 For the most up-to-date information, see the [AAAI'23 Program Agenda](https://aaai.org/Conferences/AAAI-23/aaai23tutorials/)
 
-## [Lab Forum Slides](https://1drv.ms/b/s!Ao3suATqM7n7iohvC6apE2NmcCHQRw?e=3cvjBg)
+## [Lab Forum Slides](https://1drv.ms/b/s!Ao3suATqM7n7iokCQbF7jUUYwOqGqQ?e=cMnilV)
 
 ## What Will You Learn?
 
