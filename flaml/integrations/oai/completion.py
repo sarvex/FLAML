@@ -700,12 +700,12 @@ class Completion:
         Args:
             data (list): The list of test data points.
             config (dict): Hyperparameter setting for the openai api call.
-            eval_func (Callable): The evaluation function for responses per data instance. 
+            eval_func (Callable): The evaluation function for responses per data instance.
                 The function should take a list of responses and a data point as input,
                 and return a dict of metrics. You need to either provide a valid callable
                 eval_func; or do not provide one (set None) but call the test function after
                 calling the tune function in which a eval_func is provided.
-                In the latter case we will use the eval_func provided via tune function. 
+                In the latter case we will use the eval_func provided via tune function.
                 Defaults to None.
 
         ```python
