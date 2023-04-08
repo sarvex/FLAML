@@ -75,8 +75,8 @@ def _load_data(
     ][:n_test_data]
 
     print(len(tune_data), len(test_data))
-    print(tune_data[1]["problem"])
-    print(tune_data[1]["solution"])
+    print(test_data[1]["problem"])
+    print(test_data[1]["solution"])
     return tune_data, test_data
 
 
@@ -118,7 +118,7 @@ def _hint_selector(hints, model, n=100):
     hints: list of str,  hints
     model: model used
     """
-    config = {"model": model, "n": n, "prompt": "{ask}"}
+    config = {"model": model, "n": n, "prompt": "{ask}", "max_tokens": 4}
 
     ask = "Given a problem, there are several hints to the problem. Choose the best hint that can solve the problem. You should ONLY return the id of that response. For example, if you find the best hint is i, reply '[i]' and then stop. You should have no explanations or any other words.\n\n"
     for i, r in enumerate(hints):
@@ -127,7 +127,7 @@ def _hint_selector(hints, model, n=100):
     context = {"ask": ask}
 
     raw_responses = oai.ChatCompletion.create(context, **config, use_cache=True)
-    bracket_res = [r["message"]["content"].rstrip() for r in raw_responses["choices"]]
+    bracket_res = oai.ChatCompletion.extract_text(raw_responses)
     box_res = []
     for b in bracket_res:
         a = boxed_number(b)
@@ -148,9 +148,9 @@ def _hint_creator(problem, **config):
     model = config["model"]
     n = config["n"]
     hints = _hint_generator(problem, model, n=n)
-    voted_hint = _hint_selector(hints, model, n=100)
-
     print("\n\nHints:", hints)
+
+    voted_hint = _hint_selector(hints, model, n=10)
     print("\n\nVoted Hint:", voted_hint)
 
     return voted_hint
@@ -216,7 +216,7 @@ def solve_with_vote_hint(test_data, model_name="gpt-4"):
         config_with_hint = {
             "model": model_name,
             "prompt": prompts_with_hints[0],
-            "max_tokens": 600,
+            "max_tokens": 100,
             "n": n,
         }
         metrics = []
@@ -228,7 +228,7 @@ def solve_with_vote_hint(test_data, model_name="gpt-4"):
             # NOTE: adding hint to context
             # data_i.update({"hint": hint_i})
 
-            print(data_i)
+            print(i, data_i)
             data_with_hint = data_i.copy()
             data_with_hint.update({"hint": hint_i})
             print("data with hint:", data_with_hint)
@@ -252,7 +252,7 @@ def solve_with_vote_hint(test_data, model_name="gpt-4"):
         plt.xlabel("top vote")
         plt.ylabel("success rate")
     plt.legend(["n=10", "n=30"])
-    plt.savefig("test/openai/math_vote_hint.png")
+    plt.savefig("math/math_vote_hint.png")
 
 
 def solve_with_vote(test_data, model_name="gpt-4"):
@@ -327,13 +327,13 @@ def solve_with_vote(test_data, model_name="gpt-4"):
         plt.xlabel("top vote")
         plt.ylabel("success rate")
     plt.legend(["n=10", "n=30"])
-    plt.savefig("test/openai/math_vote.png")
+    plt.savefig("math/math_vote.png")
 
 
 if __name__ == "__main__":
     import time
 
-    openai.api_key_path = "test/openai/key.txt"
+    openai.api_key_path = "../key.txt"
     from flaml.autogen.math_utils import eval_math_responses
 
     seed = 41
