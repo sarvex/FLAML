@@ -314,6 +314,15 @@ class MathUserProxyAgent(UserProxyAgent):
                     output, is_success = self._execute_one_python_code(code)
                 elif lang == "wolfram":
                     output, is_success = self._execute_one_wolfram_query(code)
+                elif lang in ["bash", "shell", "sh"]:
+                    exitcode, output, _ = execute_code(
+                        code, work_dir=self._work_dir, use_docker=self._use_docker, lang=lang, timeout=self._time_out
+                    )
+                    output = output.decode("utf-8")
+                    is_success = exitcode == 0
+                else:
+                    output = "Error: The language is not supported."
+                    is_success = False
 
                 reply += output + "\n"
                 if not is_success:

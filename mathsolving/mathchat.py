@@ -1,4 +1,4 @@
-from flaml.autogen.agent import AssistantAgent, UserProxyAgent, MathUserProxyAgent
+from flaml.autogen.agent import AssistantAgent, MathUserProxyAgent
 from flaml.autogen.agent.math_user_proxy_agent import is_termination_msg
 
 
@@ -27,6 +27,7 @@ class MathChat:
             human_input_mode="NEVER",
             is_termination_msg=is_termination_msg,
             max_consecutive_auto_reply=max_consecutive_auto_reply,
+            use_docker=False,
         )
 
     def solve_one_problem(self, problem):
