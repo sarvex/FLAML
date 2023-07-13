@@ -229,7 +229,7 @@ class MathUserProxyAgent(UserProxyAgent):
         the "print" function will also be added to the last line of the code if needed
         """
         # Need to replace all "; " with "\n" to avoid syntax error when adding `print` to the last line
-        pycode = pycode.replace("; ", "\n").replace(";", "\n")
+        pycode = pycode.strip().replace("; ", "\n").replace(";", "\n")
         pycode = self._previous_code + add_print_to_last_line(pycode)
 
         return_code, output, _ = execute_code(pycode, use_docker=self._use_docker, timeout=5)

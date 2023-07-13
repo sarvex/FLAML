@@ -66,9 +66,17 @@ Put the final answer in \\boxed{} when everything is done."""
         # solve
         self.assistant.receive(problem["problem"], self.user_agent)
         response_with_ans = self.assistant._oai_conversations["user"][-1]["content"]
+
+        is_valid_reply = False
+        try:
+            if is_termination_msg(response_with_ans):
+                is_valid_reply = True
+        except Exception:
+            pass
+
         return {
             "response_with_ans": response_with_ans,
-            "is_valid_reply": True if is_termination_msg(response_with_ans) else False,
+            "is_valid_reply": is_valid_reply,
             "round": (len(self.assistant._oai_conversations["user"]) - 1) // 2,
             "messages": self.assistant._oai_conversations,
         }
