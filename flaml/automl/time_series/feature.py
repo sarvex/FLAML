@@ -30,5 +30,4 @@ def position_in_month(d: datetime.date):
     nxt = datetime.date(
         d.year + 1 if d.month == 12 else d.year, 1 if d.month == 12 else d.month + 1, 1
     ) - datetime.timedelta(days=1)
-    delta = (d - prev).days / (nxt - prev).days
-    return delta
+    return (d - prev).days / (nxt - prev).days

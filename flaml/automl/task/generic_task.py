@@ -316,7 +316,7 @@ class GenericTask(Task):
             else:
                 state.weight_val = weight_val
                 state.fit_kwargs["sample_weight"] = weight_train
-        elif not condition_type and not condition_param:
+        elif not condition_type:
             X_train, X_val, y_train, y_val = train_test_split(
                 X,
                 y,
@@ -324,7 +324,7 @@ class GenericTask(Task):
                 stratify=stratify,
                 random_state=RANDOM_SEED,
             )
-        elif condition_type and condition_param:
+        elif condition_param:
             (
                 X_train,
                 X_val,
@@ -451,14 +451,14 @@ class GenericTask(Task):
                         test_size=split_ratio,
                         shuffle=False,
                     )
-                elif not is_spark_dataframe and not is_sample_weight:
+                elif not is_spark_dataframe:
                     X_train, X_val, y_train, y_val = train_test_split(
                         X_train_all,
                         y_train_all,
                         test_size=split_ratio,
                         shuffle=False,
                     )
-                elif is_spark_dataframe and is_sample_weight:
+                elif is_sample_weight:
                     (
                         X_train,
                         X_val,
@@ -612,7 +612,7 @@ class GenericTask(Task):
         if isinstance(X, List):
             try:
                 if isinstance(X[0], List):
-                    X = [x for x in zip(*X)]
+                    X = list(zip(*X))
                 X = pd.DataFrame(
                     dict(
                         [

@@ -70,12 +70,13 @@ class ExperimentAnalysis:
         return {trial.trial_id: trial.last_result for trial in self.trials}
 
     def _validate_metric(self, metric: str) -> str:
-        if not metric and not self.default_metric:
+        if metric or self.default_metric:
+            return metric or self.default_metric
+        else:
             raise ValueError(
                 "No `metric` has been passed and  `default_metric` has "
                 "not been set. Please specify the `metric` parameter."
             )
-        return metric or self.default_metric
 
     def _validate_mode(self, mode: str) -> str:
         if not mode and not self.default_mode:
@@ -122,18 +123,14 @@ class ExperimentAnalysis:
         mode = self._validate_mode(mode)
         if scope not in ["all", "last", "avg", "last-5-avg", "last-10-avg"]:
             raise ValueError(
-                "ExperimentAnalysis: attempting to get best trial for "
-                'metric {} for scope {} not in ["all", "last", "avg", '
-                '"last-5-avg", "last-10-avg"]. '
-                "If you didn't pass a `metric` parameter to `tune.run()`, "
-                "you have to pass one when fetching the best trial.".format(metric, scope)
+                f"""ExperimentAnalysis: attempting to get best trial for metric {metric} for scope {scope} not in ["all", "last", "avg", "last-5-avg", "last-10-avg"]. If you didn't pass a `metric` parameter to `tune.run()`, you have to pass one when fetching the best trial."""
             )
         best_trial = None
         best_metric_score = None
         for trial in self.trials:
             if metric not in trial.metric_analysis:
                 continue
-            if scope in ["last", "avg", "last-5-avg", "last-10-avg"]:
+            if scope in {"last", "avg", "last-5-avg", "last-10-avg"}:
                 metric_score = trial.metric_analysis[metric][scope]
             else:
                 metric_score = trial.metric_analysis[metric][mode]
@@ -146,10 +143,12 @@ class ExperimentAnalysis:
                 best_trial = trial
                 continue
 
-            if (mode == "max") and (best_metric_score < metric_score):
-                best_metric_score = metric_score
-                best_trial = trial
-            elif (mode == "min") and (best_metric_score > metric_score):
+            if (
+                mode == "max"
+                and best_metric_score < metric_score
+                or mode == "min"
+                and best_metric_score > metric_score
+            ):
                 best_metric_score = metric_score
                 best_trial = trial
         if not best_trial:

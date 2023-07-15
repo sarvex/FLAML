@@ -133,11 +133,13 @@ def spark_metric_loss_score(
         )
     elif metric_name == "log_loss":
         # For log_loss, prediction_col should be probability, and we need to convert it to label
-        df = _compute_label_from_probability(df, prediction_col, prediction_col + "_label")
+        df = _compute_label_from_probability(
+            df, prediction_col, f"{prediction_col}_label"
+        )
         evaluator = MulticlassClassificationEvaluator(
             metricName="logLoss",
             labelCol=label_col,
-            predictionCol=prediction_col + "_label",
+            predictionCol=f"{prediction_col}_label",
             probabilityCol=prediction_col,
             **kwargs,
         )

@@ -113,17 +113,15 @@ class TestRegression(unittest.TestCase):
         print(automl.best_loss)
         print(automl.best_config_train_time)
 
-        settings.update(
-            {
-                "estimator_list": ["catboost"],
-                "keep_search_state": False,
-                "model_history": False,
-                "use_best_model": False,
-                "time_budget": None,
-                "max_iter": 2,
-                "custom_hp": {"catboost": {"n_estimators": {"domain": 100}}},
-            }
-        )
+        settings |= {
+            "estimator_list": ["catboost"],
+            "keep_search_state": False,
+            "model_history": False,
+            "use_best_model": False,
+            "time_budget": None,
+            "max_iter": 2,
+            "custom_hp": {"catboost": {"n_estimators": {"domain": 100}}},
+        }
         automl.fit(X_train=X_train, y_train=y_train, X_val=X_val, y_val=y_val, **settings)
 
     def test_parallel(self, hpo_method=None):

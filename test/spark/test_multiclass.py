@@ -406,7 +406,7 @@ class TestMultiClass(unittest.TestCase):
                 if learner not in starting_points:
                     starting_points[learner] = []
                 starting_points[learner].append(config)
-        max_iter = sum([len(s) for k, s in starting_points.items()])
+        max_iter = sum(len(s) for k, s in starting_points.items())
         automl_settings_resume = {
             "time_budget": 2,
             "metric": "accuracy",

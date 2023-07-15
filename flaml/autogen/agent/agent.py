@@ -37,10 +37,7 @@ class Agent:
 
         The message can be a string or a dictionary. The string with be put in the "content" field of the new dictionary.
         """
-        if isinstance(message, str):
-            return {"content": message}
-        else:
-            return message
+        return {"content": message} if isinstance(message, str) else message
 
     def _append_oai_message(self, message: Union[Dict, str], role, conversation_id):
         """Append a message to the openai conversation.

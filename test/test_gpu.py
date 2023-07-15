@@ -77,14 +77,13 @@ def _test_hf_data():
         "metric": "accuracy",
         "log_file_name": "seqclass.log",
         "use_ray": True,
-    }
-
-    automl_settings["fit_kwargs_by_estimator"] = {
-        "transformer": {
-            "model_path": "facebook/muppet-roberta-base",
-            "output_dir": "test/data/output/",
-            "fp16": True,
-        }
+        "fit_kwargs_by_estimator": {
+            "transformer": {
+                "model_path": "facebook/muppet-roberta-base",
+                "output_dir": "test/data/output/",
+                "fp16": True,
+            }
+        },
     }
 
     automl.fit(X_train=X_train, y_train=y_train, X_val=X_val, y_val=y_val, **automl_settings)

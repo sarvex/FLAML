@@ -173,12 +173,12 @@ def test_lexiflow():
 
 
 def test_lexiflow_performance():
-    lexico_objectives = {}
-    lexico_objectives["metrics"] = ["brain", "currin"]
-    lexico_objectives["tolerances"] = {"brain": 10.0, "currin": 0.0}
-    lexico_objectives["targets"] = {"brain": 0.0, "currin": 0.0}
-    lexico_objectives["modes"] = ["min", "min"]
-
+    lexico_objectives = {
+        "metrics": ["brain", "currin"],
+        "tolerances": {"brain": 10.0, "currin": 0.0},
+        "targets": {"brain": 0.0, "currin": 0.0},
+        "modes": ["min", "min"],
+    }
     search_space = {
         "x1": tune.uniform(lower=0.000001, upper=1.0),
         "x2": tune.uniform(lower=0.000001, upper=1.0),

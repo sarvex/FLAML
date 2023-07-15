@@ -12,6 +12,5 @@ def _test_ray_classification():
 
 if __name__ == "__main__":
     ray_on_aml = Ray_On_AML()
-    ray = ray_on_aml.getRay()
-    if ray:
+    if ray := ray_on_aml.getRay():
         _test_ray_classification()

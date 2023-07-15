@@ -230,19 +230,19 @@ def cifar10_main(method="BlendSearch", num_samples=10, max_num_epochs=100, gpus_
             use_ray=True,
         )
     else:
-        if "ASHA" == method:
+        if method == "ASHA":
             algo = None
-        elif "BOHB" == method:
+        elif method == "BOHB":
             from ray.tune.schedulers import HyperBandForBOHB
             from ray.tune.suggest.bohb import TuneBOHB
 
             algo = TuneBOHB()
             scheduler = HyperBandForBOHB(max_t=max_num_epochs)
-        elif "Optuna" == method:
+        elif method == "Optuna":
             from ray.tune.suggest.optuna import OptunaSearch
 
             algo = OptunaSearch(seed=10)
-        elif "CFO" == method:
+        elif method == "CFO":
             from flaml import CFO
 
             algo = CFO(
@@ -250,7 +250,7 @@ def cifar10_main(method="BlendSearch", num_samples=10, max_num_epochs=100, gpus_
                     "num_epochs": 1,
                 }
             )
-        elif "Nevergrad" == method:
+        elif method == "Nevergrad":
             from ray.tune.suggest.nevergrad import NevergradSearch
             import nevergrad as ng
 
@@ -276,9 +276,13 @@ def cifar10_main(method="BlendSearch", num_samples=10, max_num_epochs=100, gpus_
     logger.info(f"#trials={len(result.trials)}")
     logger.info(f"time={time.time()-start_time}")
     best_trial = result.get_best_trial("loss", "min", "all")
-    logger.info("Best trial config: {}".format(best_trial.config))
-    logger.info("Best trial final validation loss: {}".format(best_trial.metric_analysis["loss"]["min"]))
-    logger.info("Best trial final validation accuracy: {}".format(best_trial.metric_analysis["accuracy"]["max"]))
+    logger.info(f"Best trial config: {best_trial.config}")
+    logger.info(
+        f'Best trial final validation loss: {best_trial.metric_analysis["loss"]["min"]}'
+    )
+    logger.info(
+        f'Best trial final validation accuracy: {best_trial.metric_analysis["accuracy"]["max"]}'
+    )
 
     best_trained_model = Net(2 ** best_trial.config["l1"], 2 ** best_trial.config["l2"])
     device = "cpu"
@@ -295,7 +299,7 @@ def cifar10_main(method="BlendSearch", num_samples=10, max_num_epochs=100, gpus_
     best_trained_model.load_state_dict(model_state)
 
     test_acc = _test_accuracy(best_trained_model, device)
-    logger.info("Best trial test set accuracy: {}".format(test_acc))
+    logger.info(f"Best trial test set accuracy: {test_acc}")
 
 
 # __main_end__

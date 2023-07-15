@@ -20,8 +20,7 @@ def train_breast_cancer(config):
 
 if __name__ == "__main__":
     ray_on_aml = Ray_On_AML()
-    ray = ray_on_aml.getRay()
-    if ray:
+    if ray := ray_on_aml.getRay():
         X, y = load_breast_cancer(return_X_y=True)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
         X_train_ref = ray.put(X_train)

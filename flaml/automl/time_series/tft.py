@@ -24,7 +24,7 @@ class TemporalFusionTransformerEstimator(TimeSeriesEstimator):
 
     @classmethod
     def search_space(cls, data, task, pred_horizon, **params):
-        space = {
+        return {
             "gradient_clip_val": {
                 "domain": tune.loguniform(lower=0.01, upper=100.0),
                 "init_value": 0.01,
@@ -50,7 +50,6 @@ class TemporalFusionTransformerEstimator(TimeSeriesEstimator):
                 "init_value": 0.001,
             },
         }
-        return space
 
     def transform_ds(self, X_train: TimeSeriesDataset, y_train, **kwargs):
         self.data = X_train.train_data
@@ -179,5 +178,4 @@ class TemporalFusionTransformerEstimator(TimeSeriesEstimator):
         new_prediction_data["time_idx"] = new_prediction_data["time_idx"].astype("int")
         new_raw_predictions = self._model.predict(new_prediction_data)
         index = [decoder_data[idx].to_numpy() for idx in ids]
-        predictions = pd.Series(new_raw_predictions.numpy().ravel(), index=index)
-        return predictions
+        return pd.Series(new_raw_predictions.numpy().ravel(), index=index)

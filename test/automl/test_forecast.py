@@ -182,9 +182,7 @@ def load_multi_dataset():
     df["temp"] = df["temp"].fillna(method="ffill")
     df["precip"] = df["precip"].fillna(method="ffill")
     df = df[:-2]  # last two rows are NaN for 'demand' column so remove them
-    df = df.reset_index()
-
-    return df
+    return df.reset_index()
 
 
 def test_multivariate_forecast_num(budget=5, estimators_when_no_prophet=["arima", "sarimax", "holt-winters"]):
@@ -298,10 +296,7 @@ def load_multi_dataset_cat(time_horizon):
 
     def above_monthly_avg(date, temp):
         month = date.month
-        if temp > monthly_avg.get(month):
-            return 1
-        else:
-            return 0
+        return 1 if temp > monthly_avg.get(month) else 0
 
     df["season"] = df["timeStamp"].apply(season)
     df["above_monthly_avg"] = df.apply(lambda x: above_monthly_avg(x["timeStamp"], x["temp"]), axis=1)

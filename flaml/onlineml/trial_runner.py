@@ -207,14 +207,15 @@ class OnlineTrialRunner:
             test_attribute = "loss_lcb"
         else:
             raise NotImplementedError
-        top_running_valid_trials = []
         logger.info("Running trial ids %s", [trial.trial_id for trial in running_valid_trials])
         self._random_state.shuffle(running_valid_trials)
         results = [trial.result.get_score(test_attribute) for trial in running_valid_trials]
         # sorted result (small to large) index
         sorted_index = np.argsort(np.array(results))
-        for i in range(min(top_number, len(running_valid_trials))):
-            top_running_valid_trials.append(running_valid_trials[sorted_index[i]])
+        top_running_valid_trials = [
+            running_valid_trials[sorted_index[i]]
+            for i in range(min(top_number, len(running_valid_trials)))
+        ]
         logger.info("Top running ids %s", [trial.trial_id for trial in top_running_valid_trials])
         return top_running_valid_trials
 
@@ -265,9 +266,9 @@ class OnlineTrialRunner:
         self._get_best_challenger()
         if self._best_challenger_trial is not None:
             assert self._best_challenger_trial.trial_id != self._champion_trial.trial_id
-            # test whether a new champion is found and set the trial properties accordingly
-            is_new_champion_found = self._better_than_champion_test(self._best_challenger_trial)
-            if is_new_champion_found:
+            if is_new_champion_found := self._better_than_champion_test(
+                self._best_challenger_trial
+            ):
                 self._set_champion(new_champion_trial=self._best_challenger_trial)
 
         # performs _worse_than_champion_test, which is an optional component in ChaCha
@@ -275,10 +276,9 @@ class OnlineTrialRunner:
             to_stop = []
             for trial_to_test in self._trials:
                 if trial_to_test.status != Trial.TERMINATED:
-                    worse_than_champion = self._worse_than_champion_test(
+                    if worse_than_champion := self._worse_than_champion_test(
                         self._champion_trial, trial_to_test, self.WARMSTART_NUM
-                    )
-                    if worse_than_champion:
+                    ):
                         to_stop.append(trial_to_test)
             # we want to ensure there are at least #max_live_model_num of challengers remaining
             max_to_stop_num = len([t for t in self._trials if t.status != Trial.TERMINATED]) - self._max_live_model_num
@@ -295,7 +295,7 @@ class OnlineTrialRunner:
             test_attribute = "loss_avg"
         else:
             raise NotImplementedError
-        active_trials = [
+        if active_trials := [
             trial
             for trial in self._trials
             if (
@@ -303,8 +303,7 @@ class OnlineTrialRunner:
                 and trial.trial_id != self._champion_trial.trial_id
                 and trial.result is not None
             )
-        ]
-        if active_trials:
+        ]:
             self._random_state.shuffle(active_trials)
             results = [trial.result.get_score(test_attribute) for trial in active_trials]
             best_index = np.argmin(results)
@@ -313,9 +312,7 @@ class OnlineTrialRunner:
     def _set_champion(self, new_champion_trial):
         """Set the status of the existing trials once a new champion is found."""
         assert new_champion_trial is not None
-        is_init_update = False
-        if self._champion_trial is None:
-            is_init_update = True
+        is_init_update = self._champion_trial is None
         self.run_trial(new_champion_trial)
         # set the checked_under_current_champion status of the trials
         for trial in self._trials:
@@ -367,18 +364,17 @@ class OnlineTrialRunner:
         """
         if trial.status in [Trial.ERROR, Trial.TERMINATED]:
             return
-        else:
-            logger.info(
-                "Terminating trial %s, with trial result %s",
-                trial.trial_id,
-                trial.result,
-            )
-            trial.set_status(Trial.TERMINATED)
-            # clean up model and result
-            trial.clean_up_model()
-            self._scheduler.on_trial_remove(self, trial)
-            self._searcher.on_trial_complete(trial.trial_id)
-            self._running_trials.remove(trial)
+        logger.info(
+            "Terminating trial %s, with trial result %s",
+            trial.trial_id,
+            trial.result,
+        )
+        trial.set_status(Trial.TERMINATED)
+        # clean up model and result
+        trial.clean_up_model()
+        self._scheduler.on_trial_remove(self, trial)
+        self._searcher.on_trial_complete(trial.trial_id)
+        self._running_trials.remove(trial)
 
     def pause_trial(self, trial):
         """Pause a trial: set the status of a trial to be Trial.PAUSED
@@ -386,21 +382,20 @@ class OnlineTrialRunner:
         """
         if trial.status in [Trial.ERROR, Trial.TERMINATED]:
             return
-        else:
-            logger.info(
-                "Pausing trial %s, with trial loss_avg: %s, loss_cb: %s, loss_ucb: %s,\
+        logger.info(
+            "Pausing trial %s, with trial loss_avg: %s, loss_cb: %s, loss_ucb: %s,\
                         resource_lease: %s",
-                trial.trial_id,
-                trial.result.loss_avg,
-                trial.result.loss_cb,
-                trial.result.loss_avg + trial.result.loss_cb,
-                trial.resource_lease,
-            )
-            trial.set_status(Trial.PAUSED)
-            # clean up model and result if no model persistence
-            if self._no_model_persistence:
-                trial.clean_up_model()
-            self._running_trials.remove(trial)
+            trial.trial_id,
+            trial.result.loss_avg,
+            trial.result.loss_cb,
+            trial.result.loss_avg + trial.result.loss_cb,
+            trial.resource_lease,
+        )
+        trial.set_status(Trial.PAUSED)
+        # clean up model and result if no model persistence
+        if self._no_model_persistence:
+            trial.clean_up_model()
+        self._running_trials.remove(trial)
 
     def run_trial(self, trial):
         """Run a trial: set the status of a trial to be Trial.RUNNING
@@ -408,9 +403,8 @@ class OnlineTrialRunner:
         """
         if trial.status in [Trial.ERROR, Trial.TERMINATED]:
             return
-        else:
-            trial.set_status(Trial.RUNNING)
-            self._running_trials.add(trial)
+        trial.set_status(Trial.RUNNING)
+        self._running_trials.add(trial)
 
     def _better_than_champion_test(self, trial_to_test):
         """Test whether there is a config in the existing trials that
@@ -419,17 +413,16 @@ class OnlineTrialRunner:
         Returns:
             A bool indicating whether a new champion is found.
         """
-        if trial_to_test.result is not None and self._champion_trial.result is not None:
-            if "ucb" in self._champion_test_policy:
-                return self._test_lcb_ucb(self._champion_trial, trial_to_test, self.WARMSTART_NUM)
-            elif "avg" in self._champion_test_policy:
-                return self._test_avg_loss(self._champion_trial, trial_to_test, self.WARMSTART_NUM)
-            elif "martingale" in self._champion_test_policy:
-                return self._test_martingale(self._champion_trial, trial_to_test)
-            else:
-                raise NotImplementedError
-        else:
+        if trial_to_test.result is None or self._champion_trial.result is None:
             return False
+        if "ucb" in self._champion_test_policy:
+            return self._test_lcb_ucb(self._champion_trial, trial_to_test, self.WARMSTART_NUM)
+        elif "avg" in self._champion_test_policy:
+            return self._test_avg_loss(self._champion_trial, trial_to_test, self.WARMSTART_NUM)
+        elif "martingale" in self._champion_test_policy:
+            return self._test_martingale(self._champion_trial, trial_to_test)
+        else:
+            raise NotImplementedError
 
     @staticmethod
     def _worse_than_champion_test(champion_trial, trial, warmstart_num=1) -> bool:

@@ -152,10 +152,9 @@ class TestClassification(unittest.TestCase):
             "n_splits": 3,
             "metric": "accuracy",
             "log_training_metric": True,
-            # "verbose": 4,
             "ensemble": True,
+            "keep_search_state": True,
         }
-        automl_settings["keep_search_state"] = True
         automl.fit(X, y, **automl_settings)
         X, y = automl._X_train_all, automl._y_train_all
         del automl

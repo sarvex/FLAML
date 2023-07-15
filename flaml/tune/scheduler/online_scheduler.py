@@ -49,20 +49,16 @@ class OnlineSuccessiveDoublingScheduler(OnlineScheduler):
 
     def on_trial_result(self, trial_runner, trial: Trial, result: Dict):
         """Report result and return a decision on the trial's status."""
-        # 1. Returns TrialScheduler.CONTINUE (i.e., keep the trial running),
-        # if the resource consumed has not reached the current resource_lease.s.
-        # 2. otherwise double the current resource lease and return TrialScheduler.PAUSE.
         if trial.result is None or trial.result.resource_used < trial.resource_lease:
             return TrialScheduler.CONTINUE
-        else:
-            trial.set_resource_lease(trial.resource_lease * self._increase_factor)
-            logger.info(
-                "Doubled resource for trial %s, used: %s, current budget %s",
-                trial.trial_id,
-                trial.result.resource_used,
-                trial.resource_lease,
-            )
-            return TrialScheduler.PAUSE
+        trial.set_resource_lease(trial.resource_lease * self._increase_factor)
+        logger.info(
+            "Doubled resource for trial %s, used: %s, current budget %s",
+            trial.trial_id,
+            trial.result.resource_used,
+            trial.resource_lease,
+        )
+        return TrialScheduler.PAUSE
 
 
 class ChaChaScheduler(OnlineSuccessiveDoublingScheduler):

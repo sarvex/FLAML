@@ -26,6 +26,8 @@ def flamlize_estimator(super_class, name: str, task: str, alternatives=None):
             in the constructor, then look for the learned defaults for estimator "xgboost".
     """
 
+
+
     class EstimatorClass(super_class):
         """**Enhanced with flaml's data-dependent default hyperparameter settings.**"""
 
@@ -134,10 +136,10 @@ def flamlize_estimator(super_class, name: str, task: str, alternatives=None):
             @wraps(super_class.predict_proba)
             def predict_proba(self, X, *args, **params):
                 X_test = self._feature_transformer.transform(X)
-                y_pred = super().predict_proba(X_test, *args, **params)
-                return y_pred
+                return super().predict_proba(X_test, *args, **params)
 
-    EstimatorClass.__doc__ += " " + super_class.__doc__
+
+    EstimatorClass.__doc__ += f" {super_class.__doc__}"
     EstimatorClass.__name__ = super_class.__name__
     return EstimatorClass
 

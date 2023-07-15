@@ -90,7 +90,7 @@ class SearchState:
             if max_iter > 1 and not self.valid_starting_point(starting_point, search_space):
                 # If the number of iterations is larger than 1, remove invalid point
                 logger.warning(
-                    "Starting point {} removed because it is outside of the search space".format(starting_point)
+                    f"Starting point {starting_point} removed because it is outside of the search space"
                 )
                 starting_point = None
         elif isinstance(starting_point, list):
@@ -164,12 +164,11 @@ class SearchState:
             time2eval = result["time_total_s"]
             trained_estimator = result["trained_estimator"]
             del result["trained_estimator"]  # free up RAM
-            n_iter = (
+            if n_iter := (
                 trained_estimator
                 and hasattr(trained_estimator, "ITER_HP")
                 and trained_estimator.params.get(trained_estimator.ITER_HP)
-            )
-            if n_iter:
+            ):
                 if "ml" in config:
                     config["ml"][trained_estimator.ITER_HP] = n_iter
                 else:
@@ -206,9 +205,8 @@ class SearchState:
         self.val_loss, self.config = obj, config
 
     def get_hist_config_sig(self, sample_size, config):
-        config_values = tuple([config[k] for k in self._hp_names if k in config])
-        config_sig = str(sample_size) + "_" + str(config_values)
-        return config_sig
+        config_values = tuple(config[k] for k in self._hp_names if k in config)
+        return f"{str(sample_size)}_{config_values}"
 
     def est_retrain_time(self, retrain_sample_size):
         assert self.best_config_sample_size is not None, "need to first get best_config_sample_size"
@@ -333,7 +331,7 @@ class AutoMLState:
         }
         if sampled_weight is not None:
             this_estimator_kwargs["sample_weight"] = weight
-        if is_report is True:
+        if is_report:
             tune.report(**result)
         return result
 

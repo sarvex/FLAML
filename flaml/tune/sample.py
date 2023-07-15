@@ -104,9 +104,7 @@ class Domain:
     def set_sampler(self, sampler, allow_override=False):
         if self.sampler and not allow_override:
             raise ValueError(
-                "You can only choose one sampler for parameter "
-                "domains. Existing sampler for parameter {}: "
-                "{}. Tried to add {}".format(self.__class__.__name__, self.sampler, sampler)
+                f"You can only choose one sampler for parameter domains. Existing sampler for parameter {self.__class__.__name__}: {self.sampler}. Tried to add {sampler}"
             )
         self.sampler = sampler
 
@@ -260,16 +258,16 @@ class Float(Domain):
         return float(value)
 
     def uniform(self):
-        if not self.lower > float("-inf"):
+        if self.lower <= float("-inf"):
             raise ValueError("Uniform requires a lower bound. Make sure to set the " "`lower` parameter of `Float()`.")
-        if not self.upper < float("inf"):
+        if self.upper >= float("inf"):
             raise ValueError("Uniform requires a upper bound. Make sure to set the " "`upper` parameter of `Float()`.")
         new = copy(self)
         new.set_sampler(self._Uniform())
         return new
 
     def loguniform(self, base: float = 10):
-        if not self.lower > 0:
+        if self.lower <= 0:
             raise ValueError(
                 "LogUniform requires a lower bound greater than 0."
                 f"Got: {self.lower}. Did you pass a variable that has "
@@ -363,7 +361,7 @@ class Integer(Domain):
         return new
 
     def loguniform(self, base: float = 10):
-        if not self.lower > 0:
+        if self.lower <= 0:
             raise ValueError(
                 "LogUniform requires a lower bound greater than 0."
                 f"Got: {self.lower}. Did you pass a variable that has "

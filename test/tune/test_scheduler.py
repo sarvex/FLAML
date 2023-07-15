@@ -18,7 +18,7 @@ def rand_vector_unit_sphere(dim):
 def simple_obj(resource, config):
     config_value_vector = np.array([config["x"], config["y"], config["z"]])
     score_sequence = []
-    for i in range(resource):
+    for _ in range(resource):
         a = rand_vector_unit_sphere(3)
         a[2] = abs(a[2])
         point_projection = np.dot(config_value_vector, a)

@@ -25,14 +25,12 @@ def oml_to_vw_w_grouping(X, y, ds_dir, fname, orginal_dim, group_num, grouping_m
     if grouping_method == "sequential":
         group_indexes = []  # lists of lists
         for i in range(group_num):
-            indexes = [
-                ind
-                for ind in range(
+            if indexes := list(
+                range(
                     i * max_size_per_group,
                     min((i + 1) * max_size_per_group, orginal_dim),
                 )
-            ]
-            if len(indexes) > 0:
+            ):
                 group_indexes.append(indexes)
         print(group_indexes)
     else:
@@ -49,10 +47,7 @@ def oml_to_vw_w_grouping(X, y, ds_dir, fname, orginal_dim, group_num, grouping_m
                     for zz in range(len(group_indexes)):
                         ns_features = " ".join("{}:{:.6f}".format(ind, X[i][ind]) for ind in group_indexes[zz])
                         NS_content.append(ns_features)
-                    ns_line = "{} |{}".format(
-                        str(y[i]),
-                        "|".join("{} {}".format(NS_LIST[j], NS_content[j]) for j in range(len(group_indexes))),
-                    )
+                    ns_line = f'{str(y[i])} |{"|".join(f"{NS_LIST[j]} {NS_content[j]}" for j in range(len(group_indexes)))}'
                     f.write(ns_line)
                     f.write("\n")
             elif isinstance(X, scipy.sparse.csr_matrix):
@@ -64,7 +59,7 @@ def save_vw_dataset_w_ns(X, y, did, ds_dir, max_ns_num, is_regression):
     """convert openml dataset to vw example and save to file"""
     print("is_regression", is_regression)
     if is_regression:
-        fname = "ds_{}_{}_{}.vw".format(did, max_ns_num, 0)
+        fname = f"ds_{did}_{max_ns_num}_0.vw"
         print("dataset size", X.shape[0], X.shape[1])
         print("saving data", did, ds_dir, fname)
         dim = X.shape[1]
@@ -129,7 +124,7 @@ def load_vw_dataset(did, ds_dir, is_regression, max_ns_num):
 
     if is_regression:
         # the second field specifies the largest number of namespaces using.
-        fname = "ds_{}_{}_{}.vw".format(did, max_ns_num, 0)
+        fname = f"ds_{did}_{max_ns_num}_0.vw"
         vw_dataset_file = os.path.join(ds_dir, fname)
         # if file does not exist, generate and save the datasets
         if not os.path.exists(vw_dataset_file) or os.stat(vw_dataset_file).st_size < 1000:
@@ -158,16 +153,14 @@ def get_data(
     import random
 
     vw_examples = None
-    data_id = int(dataset_id)
     # loading oml dataset
     # data = OpenML2VWData(data_id, max_ns_num, dataset_type)
     # Y = data.Y
     if vw_format:
+        data_id = int(dataset_id)
         # vw_examples = data.vw_examples
         vw_examples = load_vw_dataset(did=data_id, ds_dir=VW_DS_DIR, is_regression=True, max_ns_num=max_ns_num)
-        Y = []
-        for i, e in enumerate(vw_examples):
-            Y.append(float(e.split("|")[0]))
+        Y = [float(e.split("|")[0]) for e in vw_examples]
     logger.debug("first data %s", vw_examples[0])
     # do data shuffling or log transformation for oml data when needed
     if shuffle:
@@ -187,9 +180,9 @@ def get_data(
             if min_y <= 0:
                 y = y + abs(min_y) + 1
             log_y = np.log(y)
-            log_vw = v.replace(org_y + "|", str(log_y) + " |")
+            log_vw = v.replace(org_y + "|", f"{str(log_y)} |")
             log_vw_examples.append(log_vw)
-        logger.info("log_vw_examples %s", log_vw_examples[0:2])
+        logger.info("log_vw_examples %s", log_vw_examples[:2])
         if log_vw_examples:
             return log_vw_examples
     return vw_examples, Y
@@ -214,8 +207,7 @@ class VowpalWabbitNamesspaceTuningProblem:
             "max_iter_num": self.max_iter_num,
             "dataset_id": dataset_id,
             "ns_num": ns_num,
-        }
-        self._problem_info.update(kwargs)
+        } | kwargs
         self._fixed_hp_config = kwargs.get("fixed_hp_config", {})
         self.namespace_feature_dim = AutoVW.get_ns_feature_dim_from_vw_example(self.vw_examples[0])
         self._raw_namespaces = list(self.namespace_feature_dim.keys())

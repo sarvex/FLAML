@@ -77,9 +77,7 @@ class TimeSeriesDataset:
     def to_dataframe(X, y, target_names: List[str], time_col: str):
         assert len(X) == len(y), "X_val and y_val must have the same length"
         validate_data_basic(X, y)
-        # coerce them into a dataframe
-        val_df = normalize_ts_data(X, target_names, time_col, y)
-        return val_df
+        return normalize_ts_data(X, target_names, time_col, y)
 
     @property
     def all_data(self):
@@ -155,10 +153,7 @@ class TimeSeriesDataset:
         reals = combined[self.time_varying_known_reals].values.astype(float)
         both = np.concatenate([reals, cat_one_hots], axis=1)
 
-        if train:
-            return both[: len(self.train_data)]
-        else:
-            return both[len(self.train_data) :]
+        return both[: len(self.train_data)] if train else both[len(self.train_data) :]
 
     # def unique_dimension_values(self) -> np.ndarray:
     #     # this is the same set for train and test data, by construction
@@ -245,7 +240,7 @@ class TimeSeriesDataset:
 
         assert isinstance(y_pred, pd.DataFrame)
         assert self.time_col in y_pred.columns
-        assert all([t in y_pred.columns for t in self.target_names])
+        assert all(t in y_pred.columns for t in self.target_names)
         return y_pred
 
     def merge_prediction_with_target(self, y_pred: Union[pd.DataFrame, pd.Series, np.ndarray]):
@@ -317,7 +312,7 @@ def date_feature_dict(timestamps: pd.Series) -> dict:
 
     new_columns_dict = {}
     for k, v in pre_columns_dict.items():
-        new_columns_dict.update(fourier_series(v, k))
+        new_columns_dict |= fourier_series(v, k)
 
     return new_columns_dict
 
@@ -339,7 +334,7 @@ def date_feature_dict_fourier(timestamps: pd.Series) -> dict:
 
     new_columns_dict = {}
     for k, v in pre_columns_dict.items():
-        new_columns_dict.update(fourier_series(v, k))
+        new_columns_dict |= fourier_series(v, k)
 
     return new_columns_dict
 
@@ -351,8 +346,8 @@ def fourier_series(feature: pd.Series, name: str):
     @return: sin(2pi*feature), cos(2pi*feature)
     """
     return {
-        name + "_sin": np.sin(2 * math.pi * feature),
-        name + "_cos": np.cos(2 * math.pi * feature),
+        f"{name}_sin": np.sin(2 * math.pi * feature),
+        f"{name}_cos": np.cos(2 * math.pi * feature),
     }
 
 
@@ -403,10 +398,7 @@ class DataTransformerTS:
                     self.cat_columns.append(column)
             elif X[column].nunique(dropna=True) < 2:
                 self.drop_columns.append(column)
-            elif X[column].dtype.name == "datetime64[ns]":
-                pass  # these will be processed at model level,
-                # so they can also be done in the predict method
-            else:
+            elif X[column].dtype.name != "datetime64[ns]":
                 self.num_columns.append(column)
 
         if self.num_columns:
@@ -469,9 +461,7 @@ class DataTransformerTS:
         if self.transformer is not None:
             X[self.num_columns] = self.transformer.transform(X[self.num_columns])
 
-        if y is None:
-            return X
-        return X, y
+        return X if y is None else (X, y)
 
     def fit_transform(self, X: Union[DataFrame, np.array], y):
         self.fit(X, y)
@@ -511,21 +501,18 @@ def normalize_ts_data(X_train_all, target_names, time_col, y_train_all=None):
 
     if y_train_all is None:
         return X_train_all
-    else:
-        if isinstance(y_train_all, np.ndarray):
-            # TODO: will need to revisit this when doing multivariate y
-            y_train_all = pd.DataFrame(
-                y_train_all.reshape(len(X_train_all), -1),
-                columns=target_names,
-                index=X_train_all.index,
-            )
-        elif isinstance(y_train_all, pd.Series):
-            y_train_all = pd.DataFrame(y_train_all)
-            y_train_all.index = X_train_all.index
+    if isinstance(y_train_all, np.ndarray):
+        # TODO: will need to revisit this when doing multivariate y
+        y_train_all = pd.DataFrame(
+            y_train_all.reshape(len(X_train_all), -1),
+            columns=target_names,
+            index=X_train_all.index,
+        )
+    elif isinstance(y_train_all, pd.Series):
+        y_train_all = pd.DataFrame(y_train_all)
+        y_train_all.index = X_train_all.index
 
-        dataframe = pd.concat([X_train_all, y_train_all], axis=1)
-
-        return dataframe
+    return pd.concat([X_train_all, y_train_all], axis=1)
 
 
 def validate_data_basic(X_train_all, y_train_all):
@@ -533,10 +520,8 @@ def validate_data_basic(X_train_all, y_train_all):
         "X_train_all must be a numpy array, a pandas dataframe, " "or Scipy sparse matrix."
     )
 
-    assert (
-        isinstance(y_train_all, np.ndarray)
-        or isinstance(y_train_all, pd.Series)
-        or isinstance(y_train_all, pd.DataFrame)
+    assert isinstance(
+        y_train_all, (np.ndarray, pd.Series, pd.DataFrame)
     ), "y_train_all must be a numpy array or a pandas series or DataFrame."
 
     assert X_train_all.size != 0 and y_train_all.size != 0, "Input data must not be empty, use None if no data"

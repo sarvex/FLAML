@@ -25,9 +25,7 @@ def run_with_config(config: dict):
         status = run._core_run.get_status()
         print(f"status: {status}")
 
-        # get metrics
-        metrics = run._core_run.get_metrics(recursive=True)
-        if metrics:
+        if metrics := run._core_run.get_metrics(recursive=True):
             run_metrics = list(metrics.values())
 
             new_metric = run_metrics[0]["eval_binary_error"]
@@ -41,7 +39,7 @@ def run_with_config(config: dict):
 
         time.sleep(5)
 
-        if status == "FAILED" or status == "Completed":
+        if status in ["FAILED", "Completed"]:
             stop = True
 
     print("The run is terminated.")

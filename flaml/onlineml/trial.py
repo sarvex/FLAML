@@ -112,18 +112,17 @@ class OnlineResult:
 
     def _update_loss_cb(self, bound_of_range, data_dim, bound_name="sample_complexity_bound"):
         """Calculate the coefficient of the confidence bound."""
-        if bound_name == "sample_complexity_bound":
-            # set the coefficient in the loss bound
-            if "mae" in self.result_type_name:
-                coef = self._cb_coef * bound_of_range
-            else:
-                coef = 0.001 * bound_of_range
-
-            comp_F = math.sqrt(data_dim)
-            n = self.observation_count
-            return coef * comp_F * math.sqrt((np.log10(n / OnlineResult.prob_delta)) / n)
-        else:
+        if bound_name != "sample_complexity_bound":
             raise NotImplementedError
+            # set the coefficient in the loss bound
+        coef = (
+            self._cb_coef * bound_of_range
+            if "mae" in self.result_type_name
+            else 0.001 * bound_of_range
+        )
+        comp_F = math.sqrt(data_dim)
+        n = self.observation_count
+        return coef * comp_F * math.sqrt((np.log10(n / OnlineResult.prob_delta)) / n)
 
     @property
     def result_type_name(self):
@@ -309,12 +308,11 @@ class VowpalWabbitTrial(BaseOnlineTrial):
         config_id_full = ""
         for key in sorted_k_list:
             v = config[key]
-            config_id = "|"
-            if isinstance(v, set):
-                value_list = sorted(v)
-                config_id += "_".join([str(k) for k in value_list])
-            else:
-                config_id += str(v)
+            config_id = "|" + (
+                "_".join([str(k) for k in sorted(v)])
+                if isinstance(v, set)
+                else str(v)
+            )
             config_id_full = config_id_full + config_id
         return config_id_full
 

@@ -45,7 +45,7 @@ def load_openml_dataset(dataset_id, data_dir=None, random_state=0, dataset_forma
     import pickle
     from sklearn.model_selection import train_test_split
 
-    filename = "openml_ds" + str(dataset_id) + ".pkl"
+    filename = f"openml_ds{str(dataset_id)}.pkl"
     filepath = os.path.join(data_dir, filename)
     if os.path.isfile(filepath):
         print("load dataset from", filepath)
@@ -67,12 +67,7 @@ def load_openml_dataset(dataset_id, data_dir=None, random_state=0, dataset_forma
         X, y = fetch_openml(data_id=dataset_id, return_X_y=True)
     X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=random_state)
     print(
-        "X_train.shape: {}, y_train.shape: {};\nX_test.shape: {}, y_test.shape: {}".format(
-            X_train.shape,
-            y_train.shape,
-            X_test.shape,
-            y_test.shape,
-        )
+        f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape};\nX_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}"
     )
     return X_train, X_test, y_train, y_test
 
@@ -97,7 +92,7 @@ def load_openml_task(task_id, data_dir):
     import pickle
 
     task = openml.tasks.get_task(task_id)
-    filename = "openml_task" + str(task_id) + ".pkl"
+    filename = f"openml_task{str(task_id)}.pkl"
     filepath = os.path.join(data_dir, filename)
     if os.path.isfile(filepath):
         print("load dataset from", filepath)
@@ -119,12 +114,7 @@ def load_openml_task(task_id, data_dir):
     X_test = X.iloc[test_indices]
     y_test = y[test_indices]
     print(
-        "X_train.shape: {}, y_train.shape: {},\nX_test.shape: {}, y_test.shape: {}".format(
-            X_train.shape,
-            y_train.shape,
-            X_test.shape,
-            y_test.shape,
-        )
+        f"X_train.shape: {X_train.shape}, y_train.shape: {y_train.shape},\nX_test.shape: {X_test.shape}, y_test.shape: {y_test.shape}"
     )
     return X_train, X_test, y_train, y_test
 
@@ -158,12 +148,9 @@ def get_output_from_log(filename, time_budget):
         for record in reader.records():
             time_used = record.wall_clock_time
             val_loss = record.validation_loss
-            config = record.config
             learner = record.learner.split("_")[0]
-            sample_size = record.sample_size
-            metric = record.logged_metric
-
             if time_used < time_budget and np.isfinite(val_loss):
+                config = record.config
                 if val_loss < best_val_loss:
                     best_val_loss = val_loss
                     best_config = config
@@ -171,8 +158,11 @@ def get_output_from_log(filename, time_budget):
                     best_config_list.append(best_config)
                 search_time_list.append(time_used)
                 best_error_list.append(best_val_loss)
+                metric = record.logged_metric
+
                 logged_metric_list.append(metric)
                 error_list.append(val_loss)
+                sample_size = record.sample_size
                 config_list.append(
                     {
                         "Current Learner": learner,
@@ -218,10 +208,7 @@ def concat(X1, X2):
             if len(cat_columns):
                 df[cat_columns] = df[cat_columns].astype("category")
         return df
-    if issparse(X1):
-        return vstack((X1, X2))
-    else:
-        return np.concatenate([X1, X2])
+    return vstack((X1, X2)) if issparse(X1) else np.concatenate([X1, X2])
 
 
 def add_time_idx_col(X):
@@ -265,13 +252,12 @@ class DataTransformer:
             task = task_factory(task, X, y)
 
         if task.is_nlp():
-            # if the mode is NLP, check the type of input, each column must be either string or
-            # ids (input ids, token type id, attention mask, etc.)
-            str_columns = []
-            for column in X.columns:
-                if isinstance(X[column].iloc[0], str):
-                    str_columns.append(column)
-            if len(str_columns) > 0:
+            str_columns = [
+                column
+                for column in X.columns
+                if isinstance(X[column].iloc[0], str)
+            ]
+            if str_columns:
                 X[str_columns] = X[str_columns].astype("string")
             self._str_columns = str_columns
         elif isinstance(X, DataFrame):

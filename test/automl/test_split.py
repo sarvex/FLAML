@@ -14,9 +14,8 @@ def _test(split_type):
 
     automl_settings = {
         "time_budget": 2,
-        # "metric": 'accuracy',
         "task": "classification",
-        "log_file_name": "test/{}.log".format(dataset),
+        "log_file_name": f"test/{dataset}.log",
         "model_history": True,
         "log_training_metric": True,
         "split_type": split_type,
@@ -64,7 +63,7 @@ def test_groups():
     automl_settings = {
         "time_budget": 2,
         "task": "classification",
-        "log_file_name": "test/{}.log".format(dataset),
+        "log_file_name": f"test/{dataset}.log",
         "model_history": True,
         "eval_method": "cv",
         "groups": np.random.randint(low=0, high=10, size=len(y)),
@@ -131,10 +130,17 @@ def test_rank():
     automl_settings = {
         "time_budget": 2,
         "task": "rank",
-        "log_file_name": "test/{}.log".format(dataset),
+        "log_file_name": f"test/{dataset}.log",
         "model_history": True,
         "eval_method": "cv",
-        "groups": np.array([0] * 200 + [1] * 200 + [2] * 200 + [3] * 200 + [4] * 100 + [5] * 100),  # group labels
+        "groups": np.array(
+            [0] * 200
+            + [1] * 200
+            + [2] * 200
+            + [3] * 200
+            + [4] * 100
+            + [5] * 100
+        ),
         "learner_selector": "roundrobin",
     }
     automl.fit(X, y, **automl_settings)
@@ -143,11 +149,10 @@ def test_rank():
     automl_settings = {
         "time_budget": 2,
         "task": "rank",
-        "metric": "ndcg@5",  # 5 can be replaced by any number
-        "log_file_name": "test/{}.log".format(dataset),
+        "metric": "ndcg@5",
+        "log_file_name": f"test/{dataset}.log",
         "model_history": True,
-        "groups": [200] * 4 + [100] * 2,  # alternative way: group counts
-        # "estimator_list": ['lgbm', 'xgboost'],  # list of ML learners
+        "groups": [200] * 4 + [100] * 2,
         "learner_selector": "roundrobin",
     }
     automl.fit(X, y, **automl_settings)
@@ -183,7 +188,7 @@ def test_object():
     automl_settings = {
         "time_budget": 2,
         "task": "classification",
-        "log_file_name": "test/{}.log".format(dataset),
+        "log_file_name": f"test/{dataset}.log",
         "model_history": True,
         "log_training_metric": True,
         "split_type": TestKFold(5),

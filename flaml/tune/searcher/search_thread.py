@@ -147,8 +147,7 @@ class SearchThread:
                 if not str(e).endswith("has already finished and can not be updated."):
                     raise e
         new_cost = result.get(self.cost_attr, 1)
-        if self.cost_last < new_cost:
-            self.cost_last = new_cost
+        self.cost_last = max(self.cost_last, new_cost)
             # self._update_speed()
 
     @property

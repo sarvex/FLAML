@@ -4,11 +4,12 @@ from flaml.tune import INCUMBENT_RESULT
 
 
 def rosenbrock_function(config: dict):
-    funcLoss = 50
-    for key, value in config.items():
-        if key in ["x1", "x2", "x3", "x4", "x5"]:
-            funcLoss += value**2 - 10 * np.cos(2 * np.pi * value)
-    if INCUMBENT_RESULT in config.keys():
+    funcLoss = 50 + sum(
+        value**2 - 10 * np.cos(2 * np.pi * value)
+        for key, value in config.items()
+        if key in ["x1", "x2", "x3", "x4", "x5"]
+    )
+    if INCUMBENT_RESULT in config:
         print("----------------------------------------------")
         print("incumbent result", config[INCUMBENT_RESULT])
         print("----------------------------------------------")
@@ -34,12 +35,12 @@ def test_record_incumbent(method="BlendSearch"):
             "x5": tune.choice([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]),
         }
 
-    max_iter = 100
     num_samples = 128
     time_budget_s = 1
     n_cpu = 1
 
     if method == "BlendSearch":
+        max_iter = 100
         tune.run(
             evaluation_function=rosenbrock_function,
             config=search_space,

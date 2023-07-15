@@ -99,19 +99,21 @@ def tokenize_and_align_labels(
         previous_word_idx = None
         label_ids = []
         for word_idx in tokenized_inputs.word_ids(batch_index=0):
-            if word_idx is None:
+            if (
+                word_idx is not None
+                and word_idx == previous_word_idx
+                and hf_args.label_all_tokens
+            ):
+                # If the B- word is converted into multiple subtokens, map the additional subtokens to I-
+                label_ids.append(b_to_i_label[label_to_id[examples[Y_sent_key][word_idx]]])
+            elif (
+                word_idx is not None
+                and word_idx == previous_word_idx
+                or word_idx is None
+            ):
                 label_ids.append(-100)
-            elif word_idx != previous_word_idx:
-                label_ids.append(label_to_id[examples[Y_sent_key][word_idx]])
-            # For the other tokens in a word, we set the label to either the current label or -100, depending on
-            # the label_all_tokens flag.
             else:
-                # Use the label_all_tokens to control whether to copy the label to all subtokens or to pad the additional tokens as -100
-                if hf_args.label_all_tokens:
-                    # If the B- word is converted into multiple subtokens, map the additional subtokens to I-
-                    label_ids.append(b_to_i_label[label_to_id[examples[Y_sent_key][word_idx]]])
-                else:
-                    label_ids.append(-100)
+                label_ids.append(label_to_id[examples[Y_sent_key][word_idx]])
             previous_word_idx = word_idx
         tokenized_inputs["labels"] = label_ids
     tmp_column_names = sorted(tokenized_inputs.keys())
@@ -243,7 +245,7 @@ def tokenize_row(
     return_column_name=False,
 ):
     if prefix:
-        this_row = tuple(["".join(x) for x in zip(prefix, this_row)])
+        this_row = tuple("".join(x) for x in zip(prefix, this_row))
 
     # tokenizer.pad_token = tokenizer.eos_token
     tokenized_example = tokenizer(
@@ -278,8 +280,7 @@ def tokenize_text_multiplechoice(X, tokenizer, hf_args=None):
 
     X_tokenized = pd.DataFrame(columns=tokenized_column_names)
     X_tokenized[tokenized_column_names] = d
-    output = X_tokenized.join(X)
-    return output
+    return X_tokenized.join(X)
 
 
 def tokenize_swag(this_row, tokenizer, hf_args=None, return_column_name=False):
@@ -287,7 +288,10 @@ def tokenize_swag(this_row, tokenizer, hf_args=None, return_column_name=False):
     # get each 1st sentence, multiply to 4 sentences
     question_headers = this_row["sent2"]
     # sent2 are the noun part of 2nd line
-    second_sentences = [question_headers + " " + this_row[key] for key in ["ending0", "ending1", "ending2", "ending3"]]
+    second_sentences = [
+        f"{question_headers} {this_row[key]}"
+        for key in ["ending0", "ending1", "ending2", "ending3"]
+    ]
     # now the 2nd-sentences are formed by combing the noun part and 4 ending parts
 
     # Flatten out
@@ -295,10 +299,12 @@ def tokenize_swag(this_row, tokenizer, hf_args=None, return_column_name=False):
     first_sentences = list(chain(*first_sentences))
 
     tokenized_example = tokenizer(
-        *tuple([first_sentences, second_sentences]),
+        *(first_sentences, second_sentences),
         truncation=True,
         max_length=hf_args.max_seq_length if hf_args else None,
-        padding="max_length" if hf_args and hf_args.pad_to_max_length else False,
+        padding="max_length"
+        if hf_args and hf_args.pad_to_max_length
+        else False
     )
     tmp_column_names = sorted(tokenized_example.keys())
 
@@ -312,7 +318,13 @@ def postprocess_prediction_and_true(task, y_pred, tokenizer, hf_args, y_true=Non
     # postprocess the matrix prediction y_pred and ground truth y_true into user readable format, e.g., for summarization, decode into text
     if y_pred is None:
         return np.array([0.0] * len(X)), y_true
-    if task == SEQCLASSIFICATION:
+    if (
+        task == SEQCLASSIFICATION
+        or task != SEQREGRESSION
+        and task != TOKENCLASSIFICATION
+        and task != SUMMARIZATION
+        and task == MULTICHOICECLASSIFICATION
+    ):
         return np.argmax(y_pred, axis=1), y_true
     elif task == SEQREGRESSION:
         return np.squeeze(y_pred), y_true  # predictions.reshape((len(predictions),))
@@ -367,8 +379,6 @@ def postprocess_prediction_and_true(task, y_pred, tokenizer, hf_args, y_true=Non
             decoded_y_true_labels = None
 
         return decoded_preds, decoded_y_true_labels
-    elif task == MULTICHOICECLASSIFICATION:
-        return np.argmax(y_pred, axis=1), y_true
 
 
 def load_model(checkpoint_path, task, num_labels=None):

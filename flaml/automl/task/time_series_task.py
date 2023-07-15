@@ -105,11 +105,7 @@ class TimeSeriesTask(Task):
             elif isinstance(y_train_all, np.ndarray):
                 label = "y"  # Prophet convention
 
-            if isinstance(label, str):
-                target_names = [label]
-            else:
-                target_names = label
-
+            target_names = [label] if isinstance(label, str) else label
             if self.time_col is None:
                 if isinstance(X_train_all, pd.DataFrame):
                     assert dataframe is None, "One of dataframe and X arguments must be None"
@@ -346,7 +342,7 @@ class TimeSeriesTask(Task):
         if isinstance(X, List):
             try:
                 if isinstance(X[0], List):
-                    X = [x for x in zip(*X)]
+                    X = list(zip(*X))
                 X = pd.DataFrame(
                     dict(
                         [
@@ -370,7 +366,7 @@ class TimeSeriesTask(Task):
         return X
 
     def preprocess(self, X, transformer=None):
-        if isinstance(X, pd.DataFrame) or isinstance(X, np.ndarray) or isinstance(X, pd.Series):
+        if isinstance(X, (pd.DataFrame, np.ndarray, pd.Series)):
             X = X.copy()
             X = normalize_ts_data(X, self.target_names, self.time_col)
             return self._preprocess(X, transformer)
@@ -447,7 +443,7 @@ class TimeSeriesTask(Task):
         assert not is_spark_dataframe, "Spark is not yet supported for time series"
 
         # TODO: why not do this if/then in the calling function?
-        if "auto" != estimator_list:
+        if estimator_list != "auto":
             return estimator_list
 
         if self.is_ts_forecastpanel():
@@ -483,10 +479,7 @@ class TimeSeriesTask(Task):
 
     def default_metric(self, metric: str) -> str:
         assert self.is_ts_forecast(), "If this is not a TS forecasting task, this code should never have been called"
-        if metric == "auto":
-            return "mape"
-        else:
-            return metric
+        return "mape" if metric == "auto" else metric
 
     @staticmethod
     def prepare_sample_train_data(automlstate, sample_size):

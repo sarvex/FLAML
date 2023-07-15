@@ -115,10 +115,7 @@ def with_parameters(trainable, **kwargs):
         raise spark_error_msg
     spark = SparkSession.builder.getOrCreate()
 
-    bc_kwargs = dict()
-    for k, v in kwargs.items():
-        bc_kwargs[k] = spark.sparkContext.broadcast(v)
-
+    bc_kwargs = {k: spark.sparkContext.broadcast(v) for k, v in kwargs.items()}
     return partial(trainable, **bc_kwargs)
 
 
@@ -165,7 +162,7 @@ def broadcast_code(custom_code="", file_name="mylearner"):
     """
     flaml_path = os.path.dirname(os.path.abspath(__file__))
     custom_code = textwrap.dedent(custom_code)
-    custom_path = os.path.join(flaml_path, file_name + ".py")
+    custom_path = os.path.join(flaml_path, f"{file_name}.py")
 
     with open(custom_path, "w") as f:
         f.write(custom_code)
@@ -293,9 +290,4 @@ class PySparkOvertimeMonitor:
                 print()
                 logger.warning("Time exceeded, canceled jobs")
             # self._setLogLevel("WARN")
-            if not exc_type:
-                return True
-            elif exc_type == py4j.protocol.Py4JJavaError:
-                return True
-            else:
-                return False
+            return not exc_type or exc_type == py4j.protocol.Py4JJavaError

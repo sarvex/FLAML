@@ -155,9 +155,7 @@ def _generate_variants(
             for k, v in resolved.items():
                 if k in resolved_vars and v != resolved_vars[k] and _is_resolved(resolved_vars[k]):
                     raise ValueError(
-                        "The variable `{}` could not be unambiguously "
-                        "resolved to a single value. Consider simplifying "
-                        "your configuration.".format(k)
+                        f"The variable `{k}` could not be unambiguously resolved to a single value. Consider simplifying your configuration."
                     )
                 resolved_vars[k] = v
             yield resolved_vars, spec
@@ -202,10 +200,10 @@ def _resolve_domain_vars(
                 assign_value(spec, path, value)
                 resolved[path] = value
     if error:
-        if not allow_fail:
-            raise error
-        else:
+        if allow_fail:
             return False, resolved
+        else:
+            raise error
     return True, resolved
 
 
@@ -216,10 +214,7 @@ def _grid_search_generator(unresolved_spec: Dict, grid_vars: List) -> Generator[
         value_indices[i] += 1
         if value_indices[i] >= len(grid_vars[i][1]):
             value_indices[i] = 0
-            if i + 1 < len(value_indices):
-                return increment(i + 1)
-            else:
-                return True
+            return increment(i + 1) if i + 1 < len(value_indices) else True
         return False
 
     if not grid_vars:
@@ -250,7 +245,7 @@ def _try_resolve(v) -> Tuple[bool, Any]:
         # Grid search values
         grid_values = v["grid_search"]
         if not isinstance(grid_values, list):
-            raise TuneError("Grid search expected list of values, got: {}".format(grid_values))
+            raise TuneError(f"Grid search expected list of values, got: {grid_values}")
         return False, Categorical(grid_values).grid()
     return True, v
 
@@ -295,7 +290,7 @@ def _unresolved_values(spec: Dict) -> Dict[Tuple, Any]:
 
 
 def has_unresolved_values(spec: Dict) -> bool:
-    return True if _unresolved_values(spec) else False
+    return bool(_unresolved_values(spec))
 
 
 class _UnresolvedAccessGuard(dict):
@@ -306,7 +301,7 @@ class _UnresolvedAccessGuard(dict):
     def __getattribute__(self, item):
         value = dict.__getattribute__(self, item)
         if not _is_resolved(value):
-            raise RecursiveDependencyError("`{}` recursively depends on {}".format(item, value))
+            raise RecursiveDependencyError(f"`{item}` recursively depends on {value}")
         elif isinstance(value, dict):
             return _UnresolvedAccessGuard(value)
         else:
