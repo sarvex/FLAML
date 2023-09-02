@@ -7,10 +7,7 @@ def test_config_constraint():
         return {"metric": metric}
 
     def config_constraint(config):
-        if config["y"] >= config["x"]:
-            return 1
-        else:
-            return 0
+        return 1 if config["y"] >= config["x"] else 0
 
     analysis = tune.run(
         evaluate_config_dict,

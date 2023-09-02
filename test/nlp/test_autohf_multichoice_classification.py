@@ -31,16 +31,13 @@ def test_mcc():
 
     y_pred = automl.predict(X_test)
     proba = automl.predict_proba(X_test)
-    print(str(len(automl.classes_)) + " classes")
+    print(f"{len(automl.classes_)} classes")
     print(y_pred)
     print(y_test)
     print(proba)
-    true_count = 0
-    for i, v in y_test.items():
-        if y_pred[i] == v:
-            true_count += 1
+    true_count = sum(1 for i, v in y_test.items() if y_pred[i] == v)
     accuracy = round(true_count / len(y_pred), 5)
-    print("Accuracy: " + str(accuracy))
+    print(f"Accuracy: {str(accuracy)}")
 
     if os.path.exists("test/data/output/"):
         try:

@@ -46,8 +46,7 @@ class TrainerForAuto(Seq2SeqTrainer):
         if not hasattr(self, "intermediate_results"):
             self.intermediate_results = {}
 
-        epoch_num = logs.get("epoch", None)
-        if epoch_num:
+        if epoch_num := logs.get("epoch", None):
             self.intermediate_results.setdefault(epoch_num, {})
             self.intermediate_results[epoch_num].update(logs)
 

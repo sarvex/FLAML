@@ -160,10 +160,7 @@ def metric_loss_score(
                 + ", ".join(huggingface_metric_to_mode.keys())
                 + ". Please pass a customized metric function to AutoML.fit(metric=func)"
             )
-        if metric_mode == "max":
-            return 1 - score
-        else:
-            return score
+        return 1 - score if metric_mode == "max" else score
 
 
 def is_in_sklearn_metric_name_set(metric_name: str):
@@ -172,7 +169,7 @@ def is_in_sklearn_metric_name_set(metric_name: str):
 
 def is_min_metric(metric_name: str):
     return (
-        metric_name in ["rmse", "mae", "mse", "log_loss", "mape"]
+        metric_name in {"rmse", "mae", "mse", "log_loss", "mape"}
         or huggingface_metric_to_mode.get(metric_name, None) == "min"
     )
 
@@ -206,7 +203,7 @@ def sklearn_metric_loss_score(
 
     metric_name = metric_name.lower()
 
-    if "r2" == metric_name:
+    if metric_name == "r2":
         score = 1.0 - r2_score(y_true, y_predict, sample_weight=sample_weight)
     elif metric_name == "rmse":
         score = np.sqrt(mean_squared_error(y_true, y_predict, sample_weight=sample_weight))
@@ -240,20 +237,20 @@ def sklearn_metric_loss_score(
             average="weighted",
             multi_class="ovr",
         )
-    elif "log_loss" == metric_name:
+    elif metric_name == "log_loss":
         score = log_loss(y_true, y_predict, labels=labels, sample_weight=sample_weight)
-    elif "mape" == metric_name:
+    elif metric_name == "mape":
         try:
             score = mean_absolute_percentage_error(y_true, y_predict)
         except ValueError:
             return np.inf
-    elif "micro_f1" == metric_name:
+    elif metric_name == "micro_f1":
         score = 1 - f1_score(y_true, y_predict, sample_weight=sample_weight, average="micro")
-    elif "macro_f1" == metric_name:
+    elif metric_name == "macro_f1":
         score = 1 - f1_score(y_true, y_predict, sample_weight=sample_weight, average="macro")
-    elif "f1" == metric_name:
+    elif metric_name == "f1":
         score = 1 - f1_score(y_true, y_predict, sample_weight=sample_weight)
-    elif "ap" == metric_name:
+    elif metric_name == "ap":
         score = 1 - average_precision_score(y_true, y_predict, sample_weight=sample_weight)
     elif "ndcg" in metric_name:
         if "@" in metric_name:
@@ -294,7 +291,7 @@ def get_y_pred(estimator, X, eval_metric, task: Task):
     else:
         y_pred = estimator.predict(X)
 
-    if isinstance(y_pred, Series) or isinstance(y_pred, DataFrame):
+    if isinstance(y_pred, (Series, DataFrame)):
         y_pred = y_pred.values
 
     return y_pred
@@ -347,7 +344,7 @@ def compute_estimator(
         fit_kwargs["X_val"] = X_val
         fit_kwargs["y_val"] = y_val
 
-    if "holdout" == eval_method:
+    if eval_method == "holdout":
         val_loss, metric_for_logging, train_time, pred_time = get_val_loss(
             config_dic,
             estimator,
@@ -435,8 +432,7 @@ def norm_confusion_matrix(y_true: Union[np.array, Series], y_pred: Union[np.arra
     from sklearn.metrics import confusion_matrix
 
     conf_mat = confusion_matrix(y_true, y_pred)
-    norm_conf_mat = conf_mat.astype("float") / conf_mat.sum(axis=1)[:, np.newaxis]
-    return norm_conf_mat
+    return conf_mat.astype("float") / conf_mat.sum(axis=1)[:, np.newaxis]
 
 
 def multi_class_curves(
@@ -552,7 +548,7 @@ def _eval_estimator(
 
         # TODO: why are integer labels being cast to str in the first place?
 
-        if isinstance(val_pred_y, Series) or isinstance(val_pred_y, DataFrame) or isinstance(val_pred_y, np.ndarray):
+        if isinstance(val_pred_y, (Series, DataFrame, np.ndarray)):
             test = val_pred_y if isinstance(val_pred_y, np.ndarray) else val_pred_y.values
             if not np.issubdtype(test.dtype, np.number):
                 # some NLP models return a list

@@ -122,8 +122,7 @@ def config_list_openai_aoai(
         if exclude != "openai"
         else []
     )
-    config_list = openai_config + aoai_config
-    return config_list
+    return openai_config + aoai_config
 
 
 def config_list_from_models(

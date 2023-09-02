@@ -302,7 +302,7 @@ def test_math(num_samples=-1):
     ]
     print(
         "max tokens in tuning data's canonical solutions",
-        max([len(x["solution"].split()) for x in tune_data]),
+        max(len(x["solution"].split()) for x in tune_data),
     )
     print(len(tune_data), len(test_data))
     # prompt template
@@ -320,7 +320,7 @@ def test_math(num_samples=-1):
         "prompt": prompts[0],
         "stop": "###",
     }
-    test_data_sample = test_data[0:3]
+    test_data_sample = test_data[:3]
     result = oai.ChatCompletion.test(test_data_sample, eval_math_responses, **vanilla_config)
     result = oai.ChatCompletion.test(
         test_data_sample,

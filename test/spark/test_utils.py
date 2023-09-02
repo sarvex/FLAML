@@ -52,13 +52,13 @@ def test_with_parameters_spark():
     rdd = spark.sparkContext.parallelize(list(range(2)))
 
     t_partial = timeit(lambda: rdd.map(lambda x: partial_train(config=x)).collect(), number=5)
-    print("python_partial_train: " + str(t_partial))
+    print(f"python_partial_train: {str(t_partial)}")
 
     t_spark = timeit(
         lambda: rdd.map(lambda x: with_parameters_train(config=x)).collect(),
         number=5,
     )
-    print("spark_with_parameters_train: " + str(t_spark))
+    print(f"spark_with_parameters_train: {str(t_spark)}")
 
     # assert t_spark < t_partial
 
@@ -165,7 +165,7 @@ def test_len_labels():
     assert len_labels(y1) == 4
     ll, la = len_labels(y2, return_labels=True)
     assert ll == 4
-    assert set(la.to_numpy()) == set([1, 2, 5, 4])
+    assert set(la.to_numpy()) == {1, 2, 5, 4}
 
 
 def test_unique_value_first_index():
@@ -260,7 +260,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("pr_auc: ", metric)
-    assert str(metric)[:5] == "0.166"
+    assert str(metric).startswith("0.166")
     # test roc_auc
     metric = spark_metric_loss_score(
         "roc_auc",
@@ -268,7 +268,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("roc_auc: ", metric)
-    assert str(metric)[:5] == "0.291"
+    assert str(metric).startswith("0.291")
 
     scoreAndLabels = [
         (-28.98343821, -27.0),
@@ -286,7 +286,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("rmse: ", metric)
-    assert str(metric)[:5] == "2.842"
+    assert str(metric).startswith("2.842")
     # test mae
     metric = spark_metric_loss_score(
         "mae",
@@ -294,7 +294,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("mae: ", metric)
-    assert str(metric)[:5] == "2.649"
+    assert str(metric).startswith("2.649")
     # test r2
     metric = spark_metric_loss_score(
         "r2",
@@ -302,7 +302,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("r2: ", metric)
-    assert str(metric)[:5] == "0.006"
+    assert str(metric).startswith("0.006")
     # test mse
     metric = spark_metric_loss_score(
         "mse",
@@ -310,7 +310,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("mse: ", metric)
-    assert str(metric)[:5] == "8.079"
+    assert str(metric).startswith("8.079")
     # test var
     metric = spark_metric_loss_score(
         "var",
@@ -318,7 +318,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("var: ", metric)
-    assert str(metric)[:5] == "-1489"
+    assert str(metric).startswith("-1489")
 
     predictionAndLabelsWithProbabilities = [
         (1.0, 1.0, 1.0, [0.1, 0.8, 0.1]),
@@ -338,7 +338,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("log_loss: ", metric)
-    assert str(metric)[:5] == "0.968"
+    assert str(metric).startswith("0.968")
     # test accuracy
     metric = spark_metric_loss_score(
         "accuracy",
@@ -354,7 +354,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("f1: ", metric)
-    assert str(metric)[:5] == "0.333"
+    assert str(metric).startswith("0.333")
 
     scoreAndLabels = [
         ([0.0, 1.0], [0.0, 2.0]),
@@ -374,7 +374,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("micro_f1: ", metric)
-    assert str(metric)[:5] == "0.304"
+    assert str(metric).startswith("0.304")
     # test macro_f1
     metric = spark_metric_loss_score(
         "macro_f1",
@@ -382,7 +382,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("macro_f1: ", metric)
-    assert str(metric)[:5] == "0.111"
+    assert str(metric).startswith("0.111")
 
     scoreAndLabels = [
         (
@@ -401,7 +401,7 @@ def test_spark_metric_loss_score():
         dataset["label"],
     )
     print("ap: ", metric)
-    assert str(metric)[:5] == "0.644"
+    assert str(metric).startswith("0.644")
     # test ndcg
     # ndcg is tested in synapseML rank tests, so we don't need to test it here
 

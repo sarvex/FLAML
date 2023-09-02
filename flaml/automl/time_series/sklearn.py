@@ -40,7 +40,7 @@ def make_lag_features(X: pd.DataFrame, y: pd.Series, lags: int):
 
     # make sure we show y's _previous_ value to exclude data leaks
     X = X.reset_index(drop=True)
-    X["lag_" + y.name] = y.shift(1).values
+    X[f"lag_{y.name}"] = y.shift(1).values
 
     X_lag = X.copy()
     for i in range(0, lags):
@@ -85,7 +85,9 @@ class SklearnWrapper:
             X_trans = self.norm.fit_transform(X_feat)
 
             cum_expl_var = np.cumsum(PCA(svd_solver="full").fit(X_trans).explained_variance_ratio_)
-            self.pca = PCA(svd_solver="full", n_components=np.argmax(1 - cum_expl_var < 1e-6))
+            self.pca = PCA(
+                svd_solver="full", n_components=np.argmax(cum_expl_var > 1 - 1e-6)
+            )
             X_trans = self.pca.fit_transform(X_trans)
         else:
             X_trans = X_feat

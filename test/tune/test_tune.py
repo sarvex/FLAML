@@ -118,8 +118,8 @@ def _test_xgboost(method="BlendSearch"):
         "eta": tune.loguniform(1e-4, 1e-1),
     }
     max_iter = 10
+    time_budget_s = 60
     for num_samples in [128]:
-        time_budget_s = 60
         for n_cpu in [2]:
             start_time = time.time()
             # ray.init(address='auto')
@@ -146,19 +146,19 @@ def _test_xgboost(method="BlendSearch"):
                     use_ray=True,
                 )
             else:
-                if "ASHA" == method:
+                if method == "ASHA":
                     algo = None
-                elif "BOHB" == method:
+                elif method == "BOHB":
                     from ray.tune.schedulers import HyperBandForBOHB
                     from ray.tune.suggest.bohb import TuneBOHB
 
                     algo = TuneBOHB(max_concurrent=n_cpu)
                     scheduler = HyperBandForBOHB(max_t=max_iter)
-                elif "Optuna" == method:
+                elif method == "Optuna":
                     from ray.tune.suggest.optuna import OptunaSearch
 
                     algo = OptunaSearch()
-                elif "CFO" == method:
+                elif method == "CFO":
                     from flaml import CFO
 
                     algo = CFO(
@@ -169,7 +169,7 @@ def _test_xgboost(method="BlendSearch"):
                             "min_child_weight": [6, 3, 2],
                         },
                     )
-                elif "CFOCat" == method:
+                elif method == "CFOCat":
                     from flaml.tune.searcher.cfo_cat import CFOCat
 
                     algo = CFOCat(
@@ -180,28 +180,28 @@ def _test_xgboost(method="BlendSearch"):
                             "min_child_weight": [6, 3, 2],
                         },
                     )
-                elif "Dragonfly" == method:
+                elif method == "Dragonfly":
                     from ray.tune.suggest.dragonfly import DragonflySearch
 
                     algo = DragonflySearch()
-                elif "SkOpt" == method:
+                elif method == "SkOpt":
                     from ray.tune.suggest.skopt import SkOptSearch
 
                     algo = SkOptSearch()
-                elif "Nevergrad" == method:
+                elif method == "Nevergrad":
                     from ray.tune.suggest.nevergrad import NevergradSearch
                     import nevergrad as ng
 
                     algo = NevergradSearch(optimizer=ng.optimizers.OnePlusOne)
-                elif "ZOOpt" == method:
+                elif method == "ZOOpt":
                     from ray.tune.suggest.zoopt import ZOOptSearch
 
                     algo = ZOOptSearch(budget=num_samples * n_cpu)
-                elif "Ax" == method:
+                elif method == "Ax":
                     from ray.tune.suggest.ax import AxSearch
 
                     algo = AxSearch()
-                elif "HyperOpt" == method:
+                elif method == "HyperOpt":
                     from ray.tune.suggest.hyperopt import HyperOptSearch
 
                     algo = HyperOptSearch()
@@ -394,12 +394,12 @@ def test_passing_search_alg():
     }
 
     # lexicographic objectives
-    lexico_objectives = {}
-    lexico_objectives["metrics"] = ["brain", "currin"]
-    lexico_objectives["tolerances"] = {"brain": 10.0, "currin": 0.0}
-    lexico_objectives["targets"] = {"brain": 0.0, "currin": 0.0}
-    lexico_objectives["modes"] = ["min", "min"]
-
+    lexico_objectives = {
+        "metrics": ["brain", "currin"],
+        "tolerances": {"brain": 10.0, "currin": 0.0},
+        "targets": {"brain": 0.0, "currin": 0.0},
+        "modes": ["min", "min"],
+    }
     ## Passing search_alg through string
     # Non lexico tune
     tune.run(

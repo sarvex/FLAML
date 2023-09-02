@@ -130,8 +130,7 @@ class TimeSeriesEstimator(SKLearnEstimator):
             f' "{TS_TIMESTAMP_COL}" with the dates in X_train.'
         )
         y_train = DataFrame(y_train, columns=[TS_VALUE_COL])
-        train_df = X_train.join(y_train)
-        return train_df
+        return X_train.join(y_train)
 
     def fit(self, X_train: TimeSeriesDataset, y_train=None, budget=None, **kwargs):
         # TODO purge y_train
@@ -178,8 +177,7 @@ class Orbit(TimeSeriesEstimator):
         with suppress_stdout_stderr():
             self._model.fit(df=X_train.train_data.copy())
 
-        train_time = time.time() - current_time
-        return train_time
+        return time.time() - current_time
 
     def predict(self, X: Union[TimeSeriesDataset, DataFrame], **kwargs):
         if isinstance(X, int):
@@ -196,7 +194,7 @@ class Orbit(TimeSeriesEstimator):
 
         if self._model is not None:
             forecast = self._model.predict(X, **kwargs)
-            out = (
+            return (
                 DataFrame(
                     forecast[
                         [
@@ -214,17 +212,13 @@ class Orbit(TimeSeriesEstimator):
                     }
                 )
             )
-
-            return out
         else:
             self.logger.warning("Estimator is not fit yet. Please run fit() before predict().")
             return None
 
     @classmethod
     def _search_space(cls, **params):
-        # TODO: fill in a proper search space
-        space = {}
-        return space
+        return {}
 
 
 class Prophet(TimeSeriesEstimator):
@@ -232,7 +226,7 @@ class Prophet(TimeSeriesEstimator):
 
     @classmethod
     def _search_space(cls, **params):
-        space = {
+        return {
             "changepoint_prior_scale": {
                 "domain": tune.loguniform(lower=0.001, upper=0.05),
                 "init_value": 0.05,
@@ -251,7 +245,6 @@ class Prophet(TimeSeriesEstimator):
                 "init_value": "multiplicative",
             },
         }
-        return space
 
     def fit(self, X_train, y_train=None, budget=None, **kwargs):
         from prophet import Prophet
@@ -329,19 +322,18 @@ class StatsModelsEstimator(TimeSeriesEstimator):
         else:
             X = X[self.regressors + [self.time_col]]
 
-        if isinstance(X, DataFrame):
-            start = X[self.time_col].iloc[0]
-            end = X[self.time_col].iloc[-1]
-            if len(self.regressors):
-                exog = self._preprocess(X[self.regressors])
-                forecast = self._model.predict(start=start, end=end, exog=exog.values, **kwargs)
-            else:
-                forecast = self._model.predict(start=start, end=end, **kwargs)
-        else:
+        if not isinstance(X, DataFrame):
             raise ValueError(
                 "X needs to be either a pandas Dataframe with dates as the first column"
                 " or an int number of periods for predict()."
             )
+        start = X[self.time_col].iloc[0]
+        end = X[self.time_col].iloc[-1]
+        if len(self.regressors):
+            exog = self._preprocess(X[self.regressors])
+            forecast = self._model.predict(start=start, end=end, exog=exog.values, **kwargs)
+        else:
+            forecast = self._model.predict(start=start, end=end, **kwargs)
         forecast.name = self.target_names[0]
         return forecast
 
@@ -351,7 +343,7 @@ class ARIMA(StatsModelsEstimator):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if not all([p in self.params for p in ["p", "d", "q"]]):
+        if any(p not in self.params for p in ["p", "d", "q"]):
             print("arima params at init time:")
             print(self.params)
             try:
@@ -365,7 +357,7 @@ class ARIMA(StatsModelsEstimator):
     @classmethod
     def _search_space(cls, data: TimeSeriesDataset, task: Task, pred_horizon: int, **params):
         scale, _ = cls.adjust_scale(data.next_scale(), len(data.train_data), pred_horizon)
-        space = {
+        return {
             "p": {
                 "domain": tune.qrandint(lower=0, upper=2 * scale, q=1),
                 "init_value": scale,
@@ -382,7 +374,6 @@ class ARIMA(StatsModelsEstimator):
                 "low_cost_init_value": 0,
             },
         }
-        return space
 
     def _join(self, X_train, y_train):
         train_df = super()._join(X_train, y_train)
@@ -452,7 +443,7 @@ class SARIMAX(StatsModelsEstimator):
             s for s in [scale, 2 * scale, 3 * scale, 4 * scale] if s * max_lags <= len(data.train_data) - pred_horizon
         ]
 
-        space = {
+        return {
             "p": {
                 "domain": tune.qrandint(lower=0, upper=scale - 1, q=1),
                 "init_value": scale - 1,
@@ -488,7 +479,6 @@ class SARIMAX(StatsModelsEstimator):
                 "init_value": scale,
             },
         }
-        return space
 
     def fit(self, X_train, y_train=None, budget=None, **kwargs):
         import warnings
@@ -558,20 +548,30 @@ class HoltWinters(StatsModelsEstimator):
 
     @classmethod
     def _search_space(cls, data: TimeSeriesDataset, task: Task, pred_horizon: int, **params):
-        space = {
-            "damped_trend": {"domain": tune.choice([True, False]), "init_value": False},
-            "trend": {"domain": tune.choice(["add", "mul", None]), "init_value": "add"},
+        return {
+            "damped_trend": {
+                "domain": tune.choice([True, False]),
+                "init_value": False,
+            },
+            "trend": {
+                "domain": tune.choice(["add", "mul", None]),
+                "init_value": "add",
+            },
             "seasonal": {
                 "domain": tune.choice(["add", "mul", None]),
                 "init_value": "add",
             },
-            "use_boxcox": {"domain": tune.choice([False, True]), "init_value": False},
+            "use_boxcox": {
+                "domain": tune.choice([False, True]),
+                "init_value": False,
+            },
             "seasonal_periods": {  # statsmodels casts this to None if "seasonal" is None
-                "domain": tune.choice([7, 12, 4, 52, 6]),  # weekly, yearly, quarterly, weekly w yearly data
+                "domain": tune.choice(
+                    [7, 12, 4, 52, 6]
+                ),  # weekly, yearly, quarterly, weekly w yearly data
                 "init_value": 7,
             },
         }
-        return space
 
     def fit(self, X_train, y_train, budget=None, free_mem_ratio=0, **kwargs):
         import warnings
@@ -702,8 +702,7 @@ class TS_SKLearn(TimeSeriesEstimator):
         )
         self._model.fit(X_train[self.regressors], y_train)
 
-        train_time = time.time() - current_time
-        return train_time
+        return time.time() - current_time
 
     def predict(self, X, **kwargs):
         X = self.enrich(X)

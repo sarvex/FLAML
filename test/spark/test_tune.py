@@ -25,10 +25,9 @@ def train_breast_cancer(config):
     gbm = lgb.train(params, train_set)
     preds = gbm.predict(X_test)
     pred_labels = np.rint(preds)
-    result = {
+    return {
         "mean_accuracy": accuracy_score(y_test, pred_labels),
     }
-    return result
 
 
 def test_tune_spark():

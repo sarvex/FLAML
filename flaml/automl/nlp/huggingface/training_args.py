@@ -84,11 +84,15 @@ class TrainingArgumentsForAuto(TrainingArguments):
         for each_field in fields(TrainingArgumentsForAuto):
             print(each_field)
             arg_parser.add_argument(
-                "--" + each_field.name,
+                f"--{each_field.name}",
                 type=each_field.type,
                 help=each_field.metadata["help"],
-                required=each_field.metadata["required"] if "required" in each_field.metadata else False,
-                choices=each_field.metadata["choices"] if "choices" in each_field.metadata else None,
+                required=each_field.metadata["required"]
+                if "required" in each_field.metadata
+                else False,
+                choices=each_field.metadata["choices"]
+                if "choices" in each_field.metadata
+                else None,
                 default=each_field.default,
             )
         console_args, unknown = arg_parser.parse_known_args()

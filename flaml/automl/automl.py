@@ -487,11 +487,9 @@ class AutoML(BaseEstimator):
     @property
     def classes_(self):
         """A numpy array of shape (n_classes,) for class labels."""
-        attr = getattr(self, "_label_transformer", None)
-        if attr:
+        if attr := getattr(self, "_label_transformer", None):
             return attr.classes_
-        attr = getattr(self, "_trained_estimator", None)
-        if attr:
+        if attr := getattr(self, "_trained_estimator", None):
             return attr.classes_
         return None
 
@@ -503,9 +501,7 @@ class AutoML(BaseEstimator):
     def feature_names_in_(self):
         attr = getattr(self, "_trained_estimator", None)
         attr = attr and getattr(attr, "feature_names_in_", None)
-        if attr is not None:
-            return attr
-        return getattr(self, "_feature_names_in_", None)
+        return attr if attr is not None else getattr(self, "_feature_names_in_", None)
 
     @property
     def feature_importances_(self):
@@ -573,7 +569,7 @@ class AutoML(BaseEstimator):
         X = self._state.task.preprocess(X, self._transformer)
         y_pred = estimator.predict(X, **pred_kwargs)
 
-        if isinstance(y_pred, np.ndarray) and y_pred.ndim > 1 and isinstance(y_pred, np.ndarray):
+        if isinstance(y_pred, np.ndarray) and y_pred.ndim > 1:
             y_pred = y_pred.flatten()
         if self._label_transformer:
             return self._label_transformer.inverse_transform(Series(y_pred.astype(int)))
@@ -598,8 +594,7 @@ class AutoML(BaseEstimator):
             logger.warning("No estimator is trained. Please run fit with enough budget.")
             return None
         X = self._state.task.preprocess(X, self._transformer)
-        proba = self._trained_estimator.predict_proba(X, **pred_kwargs)
-        return proba
+        return self._trained_estimator.predict_proba(X, **pred_kwargs)
 
     def add_learner(self, learner_name, learner_class):
         """Add a customized learner.
@@ -801,7 +796,7 @@ class AutoML(BaseEstimator):
         )
         task.validate_data(self, self._state, X_train, y_train, dataframe, label, groups=groups)
 
-        logger.info("log file name {}".format(log_file_name))
+        logger.info(f"log file name {log_file_name}")
 
         best_config = None
         best_val_loss = float("+inf")
@@ -844,8 +839,9 @@ class AutoML(BaseEstimator):
         best_config = best.config
         sample_size = len(self._y_train_all) if train_full else best.sample_size
 
-        this_estimator_kwargs = self._state.fit_kwargs_by_estimator.get(best_estimator)
-        if this_estimator_kwargs:
+        if this_estimator_kwargs := self._state.fit_kwargs_by_estimator.get(
+            best_estimator
+        ):
             this_estimator_kwargs = (
                 this_estimator_kwargs.copy()
             )  # make another shallow copy of the value (a dict obj), so user's fit_kwargs_by_estimator won't be updated
@@ -855,7 +851,7 @@ class AutoML(BaseEstimator):
             self._state.fit_kwargs_by_estimator[best_estimator] = self._state.fit_kwargs
 
         logger.info(
-            "estimator = {}, config = {}, #training instances = {}".format(best_estimator, best_config, sample_size)
+            f"estimator = {best_estimator}, config = {best_config}, #training instances = {sample_size}"
         )
         # Partially copied from fit() function
         # Initilize some attributes required for retrain_from_log
@@ -961,24 +957,20 @@ class AutoML(BaseEstimator):
             list at the end.
         """
         if len(self.estimator_list) == 1:
-            estimator = self.estimator_list[0]
+            return self._search_states[self.estimator_list[0]].low_cost_partial_config
+        configs = []
+        for estimator in self.estimator_list:
             c = self._search_states[estimator].low_cost_partial_config
-            return c
-        else:
-            configs = []
-            for estimator in self.estimator_list:
-                c = self._search_states[estimator].low_cost_partial_config
-                configs.append(c)
-            configs.append(
-                np.argmin(
-                    [
-                        self._state.learner_classes.get(estimator).cost_relative2lgbm()
-                        for estimator in self.estimator_list
-                    ]
-                )
+            configs.append(c)
+        configs.append(
+            np.argmin(
+                [
+                    self._state.learner_classes.get(estimator).cost_relative2lgbm()
+                    for estimator in self.estimator_list
+                ]
             )
-            config = {"ml": configs}
-        return config
+        )
+        return {"ml": configs}
 
     @property
     def cat_hp_cost(self) -> dict:
@@ -994,19 +986,15 @@ class AutoML(BaseEstimator):
             learner (as a list itself) is appended to the list at the end.
         """
         if len(self.estimator_list) == 1:
-            estimator = self.estimator_list[0]
+            return self._search_states[self.estimator_list[0]].cat_hp_cost
+        configs = []
+        for estimator in self.estimator_list:
             c = self._search_states[estimator].cat_hp_cost
-            return c
-        else:
-            configs = []
-            for estimator in self.estimator_list:
-                c = self._search_states[estimator].cat_hp_cost
-                configs.append(c)
-            configs.append(
-                [self._state.learner_classes.get(estimator).cost_relative2lgbm() for estimator in self.estimator_list]
-            )
-            config = {"ml": configs}
-        return config
+            configs.append(c)
+        configs.append(
+            [self._state.learner_classes.get(estimator).cost_relative2lgbm() for estimator in self.estimator_list]
+        )
+        return {"ml": configs}
 
     @property
     def points_to_evaluate(self) -> dict:

@@ -141,13 +141,13 @@ class FLOW2(Searcher):
             self._init_search()
 
     def _init_search(self):
-        self._tunable_keys = []
         self._bounded_keys = []
         self._unordered_cat_hp = {}
         hier = False
+        self._tunable_keys = []
         for key, domain in self._space.items():
-            assert not (
-                isinstance(domain, dict) and "grid_search" in domain
+            assert (
+                not isinstance(domain, dict) or "grid_search" not in domain
             ), f"{key}'s domain is grid search, not supported in FLOW^2."
             if callable(getattr(domain, "get_sampler", None)):
                 self._tunable_keys.append(key)
@@ -347,7 +347,7 @@ class FLOW2(Searcher):
             else:
                 assert (
                     self.lexico_objectives["tolerances"][k_metric][-1] == "%"
-                ), "String tolerance of {} should use %% as the suffix".format(k_metric)
+                ), f"String tolerance of {k_metric} should use %% as the suffix"
                 tolerance_bound = self._f_best[k_metric] * (
                     1 + 0.01 * float(self.lexico_objectives["tolerances"][k_metric].replace("%", ""))
                 )
@@ -382,7 +382,7 @@ class FLOW2(Searcher):
                 else:
                     assert (
                         self.lexico_objectives["tolerances"][k_metric][-1] == "%"
-                    ), "String tolerance of {} should use %% as the suffix".format(k_metric)
+                    ), f"String tolerance of {k_metric} should use %% as the suffix"
                     tolerance_bound = self._f_best[k_metric] * (
                         1 + 0.01 * float(self.lexico_objectives["tolerances"][k_metric].replace("%", ""))
                     )
@@ -470,46 +470,47 @@ class FLOW2(Searcher):
 
     def on_trial_result(self, trial_id: str, result: Dict):
         """Early update of incumbent."""
-        if result:
+        if not result:
+            return
+        obj = (
+            result.get(self._metric)
+            if self.lexico_objectives is None
+            else {k: result[k] for k in self.lexico_objectives["metrics"]}
+        )
+        if obj:
             obj = (
-                result.get(self._metric)
-                if self.lexico_objectives is None
-                else {k: result[k] for k in self.lexico_objectives["metrics"]}
+                {
+                    k: -obj[k] if m == "max" else obj[k]
+                    for k, m in zip(
+                        self.lexico_objectives["metrics"],
+                        self.lexico_objectives["modes"],
+                    )
+                }
+                if isinstance(obj, dict)
+                else obj * self.metric_op
             )
-            if obj:
-                obj = (
-                    {
-                        k: -obj[k] if m == "max" else obj[k]
-                        for k, m in zip(
-                            self.lexico_objectives["metrics"],
-                            self.lexico_objectives["modes"],
-                        )
-                    }
-                    if isinstance(obj, dict)
-                    else obj * self.metric_op
-                )
-                if (
-                    self.best_obj is None
-                    or (self.lexico_objectives is None and obj < self.best_obj)
-                    or (self.lexico_objectives is not None and self.lexico_compare(obj))
-                ):
-                    self.best_obj = obj
-                    config = self._configs[trial_id][0]
-                    if self.best_config != config:
-                        self.best_config = config
-                        if self._resource:
-                            self._resource = config[self.resource_attr]
-                        self.incumbent = self.normalize(self.best_config)
-                        self.cost_incumbent = result.get(self.cost_attr, 1)
-                        self._cost_complete4incumbent = 0
-                        self._num_complete4incumbent = 0
-                        self._num_proposedby_incumbent = 0
-                        self._num_allowed4incumbent = 2 * self.dim
-                        self._proposed_by.clear()
-                        self._iter_best_config = self.trial_count_complete
-            cost = result.get(self.cost_attr, 1)
-            # record the cost in case it is pruned and cost info is lost
-            self._trial_cost[trial_id] = cost
+            if (
+                self.best_obj is None
+                or (self.lexico_objectives is None and obj < self.best_obj)
+                or (self.lexico_objectives is not None and self.lexico_compare(obj))
+            ):
+                self.best_obj = obj
+                config = self._configs[trial_id][0]
+                if self.best_config != config:
+                    self.best_config = config
+                    if self._resource:
+                        self._resource = config[self.resource_attr]
+                    self.incumbent = self.normalize(self.best_config)
+                    self.cost_incumbent = result.get(self.cost_attr, 1)
+                    self._cost_complete4incumbent = 0
+                    self._num_complete4incumbent = 0
+                    self._num_proposedby_incumbent = 0
+                    self._num_allowed4incumbent = 2 * self.dim
+                    self._proposed_by.clear()
+                    self._iter_best_config = self.trial_count_complete
+        cost = result.get(self.cost_attr, 1)
+        # record the cost in case it is pruned and cost info is lost
+        self._trial_cost[trial_id] = cost
 
     def rand_vector_unit_sphere(self, dim, trunc=0) -> np.ndarray:
         vec = self._random.normal(0, 1, dim)
@@ -627,10 +628,10 @@ class FLOW2(Searcher):
         """Return the signature tuple of a config."""
         config = flatten_dict(config)
         space = flatten_dict(space) if space else self._space
-        value_list = []
         # self._space_keys doesn't contain keys with const values,
         # e.g., "eval_metric": ["logloss", "error"].
         keys = sorted(config.keys()) if self.hierarchical else self._space_keys
+        value_list = []
         for key in keys:
             value = config[key]
             if key == self.resource_attr:
@@ -638,8 +639,11 @@ class FLOW2(Searcher):
             else:
                 # key must be in space
                 domain = space[key]
-                if self.hierarchical and not (
-                    domain is None or type(domain) in (str, int, float) or isinstance(domain, sample.Domain)
+                if (
+                    self.hierarchical
+                    and domain is not None
+                    and type(domain) not in (str, int, float)
+                    and not isinstance(domain, sample.Domain)
                 ):
                     # not domain or hashable
                     # get rid of list type for hierarchical search space.

@@ -282,7 +282,7 @@ def execute_code(
         # extract the exit code from the logs
         pattern = re.compile(f"{exit_code_str}(\\d+){exit_code_str}")
         match = pattern.search(logs)
-        exit_code = int(match.group(1))
+        exit_code = int(match[1])
         # remove the exit code from the logs
         logs = pattern.sub("", logs)
 
@@ -329,9 +329,7 @@ def _remove_check(response):
     """Remove the check function from the response."""
     # find the position of the check function
     pos = response.find("def check(")
-    if pos == -1:
-        return response
-    return response[:pos]
+    return response if pos == -1 else response[:pos]
 
 
 def eval_function_completions(
@@ -372,7 +370,7 @@ def eval_function_completions(
             success_list.append(success)
         return {
             "expected_success": 1 - pow(1 - sum(success_list) / n, n),
-            "success": any(s for s in success_list),
+            "success": any(success_list),
         }
     if callable(assertions) and n > 1:
         # assertion generator

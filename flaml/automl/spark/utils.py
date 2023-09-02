@@ -137,9 +137,7 @@ def len_labels(y: Union[psSeries, np.ndarray], return_labels=False) -> Union[int
         labels = np.unique(y)
     else:
         labels = y.unique() if isinstance(y, psSeries) else y.iloc[:, 0].unique()
-    if return_labels:
-        return len(labels), labels
-    return len(labels)
+    return (len(labels), labels) if return_labels else len(labels)
 
 
 def unique_value_first_index(y: Union[Series, psSeries, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
@@ -167,18 +165,14 @@ def iloc_pandas_on_spark(
     if isinstance(psdf, (DataFrame, Series)):
         return psdf.iloc[index]
     if isinstance(index, (int, slice)):
-        if isinstance(psdf, psSeries):
-            return psdf.iloc[index]
-        else:
-            return psdf.iloc[index, :]
+        return psdf.iloc[index] if isinstance(psdf, psSeries) else psdf.iloc[index, :]
     elif isinstance(index, list):
         if isinstance(psdf, psSeries):
             sdf = psdf.to_frame().to_spark(index_col=index_col)
+        elif index_col in psdf.columns:
+            sdf = psdf.to_spark()
         else:
-            if index_col not in psdf.columns:
-                sdf = psdf.to_spark(index_col=index_col)
-            else:
-                sdf = psdf.to_spark()
+            sdf = psdf.to_spark(index_col=index_col)
         sdfiloc = sdf.filter(F.col(index_col).isin(index))
         psdfiloc = to_pandas_on_spark(sdfiloc)
         if isinstance(psdf, psSeries):
@@ -245,9 +239,9 @@ def spark_kFold(
             training = dataset.filter(get_fold_num_udf(dataset[foldCol]) != F.lit(i))
             validation = dataset.filter(get_fold_num_udf(dataset[foldCol]) == F.lit(i))
             if training.rdd.getNumPartitions() == 0 or len(training.take(1)) == 0:
-                raise ValueError("The training data at fold %s is empty." % i)
+                raise ValueError(f"The training data at fold {i} is empty.")
             if validation.rdd.getNumPartitions() == 0 or len(validation.take(1)) == 0:
-                raise ValueError("The validation data at fold %s is empty." % i)
+                raise ValueError(f"The validation data at fold {i} is empty.")
             training = to_pandas_on_spark(training, index_col=index_col)
             validation = to_pandas_on_spark(validation, index_col=index_col)
             datasets.append((training, validation))

@@ -1580,23 +1580,21 @@ def get_automl_settings(estimator_name="transformer"):
         "metric": "accuracy",
         "log_file_name": "seqclass.log",
         "use_ray": False,
-    }
-
-    if estimator_name.endswith("ms"):
-        automl_settings["fit_kwargs_by_estimator"] = {
+        "fit_kwargs_by_estimator": {
             estimator_name: {
                 "output_dir": "test/data/output/",
                 "fp16": False,
             }
         }
-    else:
-        automl_settings["fit_kwargs_by_estimator"] = {
+        if estimator_name.endswith("ms")
+        else {
             estimator_name: {
                 "model_path": "google/electra-small-discriminator",
                 "output_dir": "test/data/output/",
                 "fp16": False,
             }
-        }
+        },
+    }
 
     automl_settings["estimator_list"] = [estimator_name]
     return automl_settings

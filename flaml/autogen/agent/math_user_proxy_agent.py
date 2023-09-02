@@ -89,11 +89,7 @@ def is_termination_msg(x):
         if x is None:
             return False
     cb = extract_code(x)
-    contain_code = False
-    for c in cb:
-        if c[0] == "python" or c[0] == "wolfram":
-            contain_code = True
-            break
+    contain_code = any(c[0] in ["python", "wolfram"] for c in cb)
     return not contain_code and get_answer(x) is not None and get_answer(x) != ""
 
 
@@ -107,11 +103,7 @@ def add_print_to_last_line(s):
     last_line = lines[-1]
     if "\t" in last_line or "=" in last_line:
         return s
-    if "=" in last_line:
-        last_line = "print(" + last_line.split(" = ")[0] + ")"
-        lines.append(last_line)
-    else:
-        lines[-1] = "print(" + last_line + ")"
+    lines[-1] = f"print({last_line})"
     # 3. join the lines back together
     return "\n".join(lines)
 
@@ -244,11 +236,11 @@ class MathUserProxyAgent(UserProxyAgent):
                 output = "The return cannot be decoded."
 
         if not is_success:
-            # Remove the file information from the error string
-            pattern = r'File "/[^"]+\.py", line \d+, in .+\n'
             if type(output) == str:
+                # Remove the file information from the error string
+                pattern = r'File "/[^"]+\.py", line \d+, in .+\n'
                 output = re.sub(pattern, "", output)
-            output = "Error: " + output
+            output = f"Error: {output}"
         elif output == "":
             # Check if there is any print statement
             if "print" not in pycode:
@@ -265,15 +257,13 @@ class MathUserProxyAgent(UserProxyAgent):
         if is_success:
             # remove print and check if it still works
             tmp = self._previous_code + "\n" + remove_print(pycode) + "\n"
-            rcode, _, _ = execute_code(tmp, use_docker=self._use_docker)
         else:
             # only add imports and check if it works
             tmp = self._previous_code + "\n"
             for line in pycode.split("\n"):
                 if "import" in line:
                     tmp += line + "\n"
-            rcode, _, _ = execute_code(tmp, use_docker=self._use_docker)
-
+        rcode, _, _ = execute_code(tmp, use_docker=self._use_docker)
         if rcode == 0:
             self._previous_code = tmp
         return output, is_success
@@ -452,7 +442,7 @@ class WolframAlphaAPIWrapper(BaseModel):
             for r in res["pod"]:
                 if r["@title"] == "Solution":
                     answer = r["subpod"]["plaintext"]
-                if r["@title"] == "Results" or r["@title"] == "Solutions":
+                if r["@title"] in ["Results", "Solutions"]:
                     for i, sub in enumerate(r["subpod"]):
                         answer += f"ans {i}: " + sub["plaintext"] + "\n"
                     break
@@ -468,6 +458,5 @@ class WolframAlphaAPIWrapper(BaseModel):
         if answer is None or answer == "":
             # We don't want to return the assumption alone if answer is empty
             return "No good Wolfram Alpha Result was found", is_success
-        else:
-            is_success = True
-            return f"Assumption: {assumption} \nAnswer: {answer}", is_success
+        is_success = True
+        return f"Assumption: {assumption} \nAnswer: {answer}", is_success

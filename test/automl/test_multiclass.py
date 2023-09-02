@@ -29,7 +29,7 @@ class MyRegularizedGreedyForest(SKLearnEstimator):
 
     @classmethod
     def search_space(cls, data_size, task):
-        space = {
+        return {
             "max_leaf": {
                 "domain": tune.lograndint(lower=4, upper=data_size[0]),
                 "init_value": 4,
@@ -52,7 +52,6 @@ class MyRegularizedGreedyForest(SKLearnEstimator):
                 "init_value": 20,
             },
         }
-        return space
 
     @classmethod
     def size(cls, config):
@@ -506,7 +505,7 @@ class TestMultiClass(unittest.TestCase):
                 if learner not in starting_points:
                     starting_points[learner] = []
                 starting_points[learner].append(config)
-        max_iter = sum([len(s) for k, s in starting_points.items()])
+        max_iter = sum(len(s) for k, s in starting_points.items())
         settings_resume = {
             "time_budget": 2,
             "metric": "accuracy",

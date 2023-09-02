@@ -8,8 +8,7 @@ def evaluate_config(config):
     n_trials += 1
     if n_trials >= 10:
         return None
-    metric = (round(config["x"]) - 85000) ** 2 - config["x"] / config["y"]
-    return metric
+    return (round(config["x"]) - 85000) ** 2 - config["x"] / config["y"]
 
 
 def test_eval_stop():

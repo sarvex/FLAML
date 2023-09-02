@@ -38,27 +38,11 @@ from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
-UNRESOLVED_SEARCH_SPACE = str(
-    "You passed a `{par}` parameter to {cls} that contained unresolved search "
-    "space definitions. {cls} should however be instantiated with fully "
-    "configured search spaces only. To use Ray Tune's automatic search space "
-    "conversion, pass the space definition as part of the `config` argument "
-    "to `tune.run()` instead."
-)
+UNRESOLVED_SEARCH_SPACE = "You passed a `{par}` parameter to {cls} that contained unresolved search space definitions. {cls} should however be instantiated with fully configured search spaces only. To use Ray Tune's automatic search space conversion, pass the space definition as part of the `config` argument to `tune.run()` instead."
 
-UNDEFINED_SEARCH_SPACE = str(
-    "Trying to sample a configuration from {cls}, but no search "
-    "space has been defined. Either pass the `{space}` argument when "
-    "instantiating the search algorithm, or pass a `config` to "
-    "`tune.run()`."
-)
+UNDEFINED_SEARCH_SPACE = "Trying to sample a configuration from {cls}, but no search space has been defined. Either pass the `{space}` argument when instantiating the search algorithm, or pass a `config` to `tune.run()`."
 
-UNDEFINED_METRIC_MODE = str(
-    "Trying to sample a configuration from {cls}, but the `metric` "
-    "({metric}) or `mode` ({mode}) parameters have not been set. "
-    "Either pass these arguments when instantiating the search algorithm, "
-    "or pass them to `tune.run()`."
-)
+UNDEFINED_METRIC_MODE = "Trying to sample a configuration from {cls}, but the `metric` ({metric}) or `mode` ({mode}) parameters have not been set. Either pass these arguments when instantiating the search algorithm, or pass them to `tune.run()`."
 
 
 class Searcher:
@@ -211,15 +195,14 @@ class ConcurrencyLimiter(Searcher):
             return
         elif self.batch:
             self.cached_results[trial_id] = (result, error)
-            if len(self.cached_results) == self.max_concurrent:
-                # Update the underlying searcher once the
-                # full batch is completed.
-                for trial_id, (result, error) in self.cached_results.items():
-                    self.searcher.on_trial_complete(trial_id, result=result, error=error)
-                    self.live_trials.remove(trial_id)
-                self.cached_results = {}
-            else:
+            if len(self.cached_results) != self.max_concurrent:
                 return
+            # Update the underlying searcher once the
+            # full batch is completed.
+            for trial_id, (result, error) in self.cached_results.items():
+                self.searcher.on_trial_complete(trial_id, result=result, error=error)
+                self.live_trials.remove(trial_id)
+            self.cached_results = {}
         else:
             self.searcher.on_trial_complete(trial_id, result=result, error=error)
             self.live_trials.remove(trial_id)
@@ -283,26 +266,40 @@ def validate_warmstart(
     """
     if points_to_evaluate:
         if not isinstance(points_to_evaluate, list):
-            raise TypeError("points_to_evaluate expected to be a list, got {}.".format(type(points_to_evaluate)))
+            raise TypeError(
+                f"points_to_evaluate expected to be a list, got {type(points_to_evaluate)}."
+            )
         for point in points_to_evaluate:
             if not isinstance(point, (dict, list)):
                 raise TypeError(f"points_to_evaluate expected to include list or dict, " f"got {point}.")
 
-            if validate_point_name_lengths and (not len(point) == len(parameter_names)):
+            if validate_point_name_lengths and len(point) != len(
+                parameter_names
+            ):
                 raise ValueError(
-                    "Dim of point {}".format(point)
-                    + " and parameter_names {}".format(parameter_names)
-                    + " do not match."
+                    (
+                        (
+                            f"Dim of point {point}"
+                            + f" and parameter_names {parameter_names}"
+                        )
+                        + " do not match."
+                    )
                 )
 
     if points_to_evaluate and evaluated_rewards:
         if not isinstance(evaluated_rewards, list):
-            raise TypeError("evaluated_rewards expected to be a list, got {}.".format(type(evaluated_rewards)))
-        if not len(evaluated_rewards) == len(points_to_evaluate):
+            raise TypeError(
+                f"evaluated_rewards expected to be a list, got {type(evaluated_rewards)}."
+            )
+        if len(evaluated_rewards) != len(points_to_evaluate):
             raise ValueError(
-                "Dim of evaluated_rewards {}".format(evaluated_rewards)
-                + " and points_to_evaluate {}".format(points_to_evaluate)
-                + " do not match."
+                (
+                    (
+                        f"Dim of evaluated_rewards {evaluated_rewards}"
+                        + f" and points_to_evaluate {points_to_evaluate}"
+                    )
+                    + " do not match."
+                )
             )
 
 
@@ -742,10 +739,7 @@ class OptunaSearch(Searcher):
             val = None
         ot_trial_state = OptunaTrialState.COMPLETE
         if val is None:
-            if error:
-                ot_trial_state = OptunaTrialState.FAIL
-            else:
-                ot_trial_state = OptunaTrialState.PRUNED
+            ot_trial_state = OptunaTrialState.FAIL if error else OptunaTrialState.PRUNED
         try:
             self._ot_study.tell(ot_trial, val, state=ot_trial_state)
         except Exception as exc:
@@ -782,7 +776,7 @@ class OptunaSearch(Searcher):
             ot_trial_state = OptunaTrialState.PRUNED
 
         if intermediate_values:
-            intermediate_values_dict = {i: value for i, value in enumerate(intermediate_values)}
+            intermediate_values_dict = dict(enumerate(intermediate_values))
         else:
             intermediate_values_dict = None
 
@@ -879,7 +873,7 @@ class OptunaSearch(Searcher):
                     # exclusive otherwise
                     return ot.distributions.IntUniformDistribution(
                         domain.lower,
-                        domain.upper - int(bool(not quantize)),
+                        domain.upper - int(not quantize),
                         step=quantize or 1,
                     )
             elif isinstance(domain, Categorical):

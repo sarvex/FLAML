@@ -41,7 +41,7 @@ def meta_feature(task, X_train, y_train, meta_feature_names):
                 # 'numpy.ndarray' object has no attribute 'select_dtypes'
                 this_feature.append(1)  # all features are numeric
         else:
-            raise ValueError("Feature {} not implemented. ".format(each_feature_name))
+            raise ValueError(f"Feature {each_feature_name} not implemented. ")
 
     return this_feature
 
@@ -236,7 +236,7 @@ def preprocess_and_suggest_hyperparams(
     """
     dt = DataTransformer()
     X, y = dt.fit_transform(X, y, task)
-    if "choose_xgb" == estimator_or_predictor:
+    if estimator_or_predictor == "choose_xgb":
         # choose between xgb_limitdepth and xgboost
         estimator_or_predictor = suggest_learner(
             task,
@@ -252,10 +252,9 @@ def preprocess_and_suggest_hyperparams(
     model = model_class(task=task, **hyperparams)
     if model.estimator_class is None:
         return hyperparams, model_class, X, y, None, None
-    else:
-        estimator_class = model.estimator_class
-        X = model._preprocess(X)
-        hyperparams = hyperparams and model.params
+    estimator_class = model.estimator_class
+    X = model._preprocess(X)
+    hyperparams = hyperparams and model.params
 
-        transformer = AutoMLTransformer(model, dt)
-        return hyperparams, estimator_class, X, y, transformer, dt.label_transformer
+    transformer = AutoMLTransformer(model, dt)
+    return hyperparams, estimator_class, X, y, transformer, dt.label_transformer

@@ -320,17 +320,15 @@ class BaseEstimator:
         if self._model is not None:
             if self._task == "rank":
                 raise NotImplementedError("AutoML.score() is not implemented for ranking")
-            else:
-                X_val = self._preprocess(X_val)
-                metric = kwargs.pop("metric", None)
-                if metric:
-                    y_pred = self.predict(X_val, **kwargs)
-                    if is_min_metric(metric):
-                        return metric_loss_score(metric, y_pred, y_val)
-                    else:
-                        return 1.0 - metric_loss_score(metric, y_pred, y_val)
-                else:
-                    return self._model.score(X_val, y_val, **kwargs)
+            X_val = self._preprocess(X_val)
+            if not (metric := kwargs.pop("metric", None)):
+                return self._model.score(X_val, y_val, **kwargs)
+            y_pred = self.predict(X_val, **kwargs)
+            return (
+                metric_loss_score(metric, y_pred, y_val)
+                if is_min_metric(metric)
+                else 1.0 - metric_loss_score(metric, y_pred, y_val)
+            )
         else:
             logger.warning("Estimator is not fit yet. Please run fit() before predict().")
             return 0.0
@@ -411,16 +409,10 @@ class SparkEstimator(BaseEstimator):
         return_label: bool = False,
     ):
         # TODO: optimize this, support pyspark.sql.DataFrame
-        if y_train is not None:
-            self.df_train = X_train.join(y_train)
-        else:
-            self.df_train = X_train
+        self.df_train = X_train.join(y_train) if y_train is not None else X_train
         if isinstance(self.df_train, psDataFrame):
             self.df_train = self.df_train.to_spark(index_col=index_col)
-        if return_label:
-            return self.df_train, y_train.name
-        else:
-            return self.df_train
+        return (self.df_train, y_train.name) if return_label else self.df_train
 
     def fit(
         self,
@@ -443,8 +435,7 @@ class SparkEstimator(BaseEstimator):
         """
         df_train, label_col = self._preprocess(X_train, y_train, index_col=index_col, return_label=True)
         kwargs["labelCol"] = label_col
-        train_time = self._fit(df_train, **kwargs)
-        return train_time
+        return self._fit(df_train, **kwargs)
 
     def _fit(self, df_train: sparkDataFrame, **kwargs):
         current_time = time.time()
@@ -472,10 +463,7 @@ class SparkEstimator(BaseEstimator):
             predictions = to_pandas_on_spark(self._model.transform(X), index_col=index_col)
             predictions.index.name = None
             pred_y = predictions["prediction"]
-            if return_all:
-                return predictions
-            else:
-                return pred_y
+            return predictions if return_all else pred_y
         else:
             logger.warning("Estimator is not fit yet. Please run fit() before predict().")
             return np.ones(X.shape[0])
@@ -499,10 +487,7 @@ class SparkEstimator(BaseEstimator):
             predictions.index.name = None
             pred_y = predictions["probability"]
 
-            if return_all:
-                return predictions
-            else:
-                return pred_y
+            return predictions if return_all else pred_y
         else:
             logger.warning("Estimator is not fit yet. Please run fit() before predict().")
             return np.ones(X.shape[0])
@@ -575,7 +560,7 @@ class SparkLGBMEstimator(SparkEstimator):
             "SynapseML is not installed. Please refer to [SynapseML]"
             + "(https://github.com/microsoft/SynapseML) for installation instructions."
         )
-        if "regression" == task:
+        if task == "regression":
             try:
                 from synapse.ml.lightgbm import LightGBMRegressor
             except ImportError:
@@ -583,7 +568,7 @@ class SparkLGBMEstimator(SparkEstimator):
 
             self.estimator_class = LightGBMRegressor
             self.estimator_params = ParamList_LightGBM_Regressor
-        elif "rank" == task:
+        elif task == "rank":
             try:
                 from synapse.ml.lightgbm import LightGBMRanker
             except ImportError:
@@ -678,8 +663,7 @@ class SparkLGBMEstimator(SparkEstimator):
         #     self.params[self.ITER_HP] = max(max_iter, 1)
         _kwargs["labelCol"] = label_col
         self._fit(df_train, **_kwargs)
-        train_time = time.time() - start_time
-        return train_time
+        return time.time() - start_time
 
     def _fit(self, df_train: sparkDataFrame, **kwargs):
         current_time = time.time()
@@ -691,8 +675,7 @@ class SparkLGBMEstimator(SparkEstimator):
         self._model.n_classes_ = self.model_n_classes_
         if logger.level == logging.DEBUG:
             logger.debug(f"flaml.model - {model} fit finished")
-        train_time = time.time() - current_time
-        return train_time
+        return time.time() - current_time
 
 
 class TransformersEstimator(BaseEstimator):
@@ -717,7 +700,7 @@ class TransformersEstimator(BaseEstimator):
 
     @classmethod
     def search_space(cls, data_size, task, **params):
-        search_space_dict = {
+        return {
             "learning_rate": {
                 "domain": tune.loguniform(1e-6, 1e-4),
                 "init_value": 1e-5,
@@ -741,8 +724,6 @@ class TransformersEstimator(BaseEstimator):
                 "init_value": sys.maxsize,
             },
         }
-
-        return search_space_dict
 
     @property
     def fp16(self):
@@ -779,7 +760,7 @@ class TransformersEstimator(BaseEstimator):
         """
             Update the attributes in TrainingArguments that depends on the values of self.params
         """
-        local_dir = os.path.join(self._training_args.output_dir, "train_{}".format(date_str()))
+        local_dir = os.path.join(self._training_args.output_dir, f"train_{date_str()}")
         if self._use_ray is True:
             import ray
 
@@ -800,7 +781,7 @@ class TransformersEstimator(BaseEstimator):
         from .nlp.huggingface.utils import tokenize_text
         from .nlp.utils import is_a_list_of_str
 
-        is_str = str(X.dtypes[0]) in ("string", "str")
+        is_str = str(X.dtypes[0]) in {"string", "str"}
         is_list_of_str = is_a_list_of_str(X[list(X.keys())[0]].to_list()[0])
 
         if is_str or is_list_of_str:
@@ -817,12 +798,11 @@ class TransformersEstimator(BaseEstimator):
     def _model_init(self):
         from .nlp.huggingface.utils import load_model
 
-        this_model = load_model(
+        return load_model(
             checkpoint_path=self._training_args.model_path,
             task=self._task,
             num_labels=self.num_labels,
         )
-        return this_model
 
     def _preprocess_data(self, X, y):
         from datasets import Dataset
@@ -876,22 +856,21 @@ class TransformersEstimator(BaseEstimator):
             self._task.name if isinstance(self._task, Task) else self._task
         )
 
-        if data_collator_class:
-            kwargs = {
-                "model": self._model_init(),
-                # need to set model, or there's ValueError: Expected input batch_size (..) to match target batch_size (..)
-                "label_pad_token_id": -100,  # pad with token id -100
-                "pad_to_multiple_of": 8,
-                # pad to multiple of 8 because quote Transformers: "This is especially useful to enable the use of Tensor Cores on NVIDIA hardware with compute capability >= 7.5 (Volta)"
-                "tokenizer": self.tokenizer,
-            }
-
-            for key in list(kwargs.keys()):
-                if key not in data_collator_class.__dict__.keys() and key != "tokenizer":
-                    del kwargs[key]
-            return data_collator_class(**kwargs)
-        else:
+        if not data_collator_class:
             return None
+        kwargs = {
+            "model": self._model_init(),
+            # need to set model, or there's ValueError: Expected input batch_size (..) to match target batch_size (..)
+            "label_pad_token_id": -100,  # pad with token id -100
+            "pad_to_multiple_of": 8,
+            # pad to multiple of 8 because quote Transformers: "This is especially useful to enable the use of Tensor Cores on NVIDIA hardware with compute capability >= 7.5 (Volta)"
+            "tokenizer": self.tokenizer,
+        }
+
+        for key in list(kwargs.keys()):
+            if key not in data_collator_class.__dict__.keys() and key != "tokenizer":
+                del kwargs[key]
+        return data_collator_class(**kwargs)
 
     def fit(
         self,
@@ -1390,8 +1369,7 @@ class LGBMEstimator(BaseEstimator):
                 # when not trained, train at least one iter
                 self.params[self.ITER_HP] = max(max_iter, 1)
         if self.HAS_CALLBACK:
-            kwargs_callbacks = kwargs.get("callbacks")
-            if kwargs_callbacks:
+            if kwargs_callbacks := kwargs.get("callbacks"):
                 callbacks = kwargs_callbacks + self._callbacks(start_time, deadline, free_mem_ratio)
                 kwargs.pop("callbacks")
             else:
@@ -1422,8 +1400,7 @@ class LGBMEstimator(BaseEstimator):
                 self._model.set_params(n_estimators=best_iteration + 1)
         else:
             self._fit(X_train, y_train, **kwargs)
-        train_time = time.time() - start_time
-        return train_time
+        return time.time() - start_time
 
     def _callbacks(self, start_time, deadline, free_mem_ratio) -> List[Callable]:
         return [partial(self._callback, start_time, deadline, free_mem_ratio)]
@@ -1547,8 +1524,9 @@ class XGBoostEstimator(SKLearnEstimator):
             if "objective" in self.params:
                 del self.params["objective"]
         _n_estimators = self.params.pop("n_estimators")
-        callbacks = XGBoostEstimator._callbacks(start_time, deadline, free_mem_ratio)
-        if callbacks:
+        if callbacks := XGBoostEstimator._callbacks(
+            start_time, deadline, free_mem_ratio
+        ):
             self._model = xgb.train(
                 self.params,
                 dtrain,
@@ -1562,8 +1540,7 @@ class XGBoostEstimator(SKLearnEstimator):
             self.params["n_estimators"] = _n_estimators
         self.params["objective"] = objective
         del dtrain
-        train_time = time.time() - start_time
-        return train_time
+        return time.time() - start_time
 
     def predict(self, X, **kwargs):
         import xgboost as xgb
@@ -1630,7 +1607,7 @@ class XGBoostSklearnEstimator(SKLearnEstimator, LGBMEstimator):
         self.params["verbosity"] = 0
         import xgboost as xgb
 
-        if "rank" == task:
+        if task == "rank":
             self.estimator_class = xgb.XGBRanker
         elif self._task.is_classification():
             self.estimator_class = xgb.XGBClassifier
@@ -1941,8 +1918,7 @@ class CatBoostEstimator(BaseEstimator):
             kwargs["sample_weight"] = weight
         self._model = model
         self.params[self.ITER_HP] = self._model.tree_count_
-        train_time = time.time() - start_time
-        return train_time
+        return time.time() - start_time
 
     @classmethod
     def _callbacks(cls, start_time, deadline, free_mem_ratio):
@@ -2003,10 +1979,7 @@ class KNeighborsEstimator(BaseEstimator):
         elif isinstance(X, np.ndarray) and X.dtype.kind not in "buif":
             # drop categocial columns if any
             X = DataFrame(X)
-            cat_columns = []
-            for col in X.columns:
-                if isinstance(X[col][0], str):
-                    cat_columns.append(col)
+            cat_columns = [col for col in X.columns if isinstance(X[col][0], str)]
             X = X.drop(cat_columns, axis=1)
             X = X.to_numpy()
         return X
@@ -2015,7 +1988,7 @@ class KNeighborsEstimator(BaseEstimator):
 class suppress_stdout_stderr(object):
     def __init__(self):
         # Open a pair of null files
-        self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
+        self.null_fds = [os.open(os.devnull, os.O_RDWR) for _ in range(2)]
         # Save the actual stdout (1) and stderr (2) file descriptors.
         self.save_fds = (os.dup(1), os.dup(2))
 

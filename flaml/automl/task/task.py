@@ -48,11 +48,7 @@ NLP_TASKS = (*NLG_TASKS, *NLU_TASKS)
 
 
 def get_classification_objective(num_labels: int) -> str:
-    if num_labels == 2:
-        objective_name = "binary"
-    else:
-        objective_name = "multiclass"
-    return objective_name
+    return "binary" if num_labels == 2 else "multiclass"
 
 
 class Task(ABC):

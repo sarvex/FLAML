@@ -43,10 +43,7 @@ def is_constant(space: Union[Dict, List]) -> bool:
                 return False
         return True
     elif isinstance(space, list):
-        for item in space:
-            if not is_constant(item):
-                return False
-        return True
+        return all(is_constant(item) for item in space)
     return not isinstance(space, sample.Domain)
 
 
@@ -59,9 +56,9 @@ def define_by_run_func(trial, space: Dict, path: str = "") -> Optional[Dict[str,
     config = {}
     for key, domain in space.items():
         if path:
-            key = path + "/" + key
+            key = f"{path}/{key}"
         if isinstance(domain, dict):
-            config.update(define_by_run_func(trial, domain, key))
+            config |= define_by_run_func(trial, domain, key)
             continue
         if not isinstance(domain, sample.Domain):
             config[key] = domain
@@ -92,19 +89,23 @@ def define_by_run_func(trial, space: Dict, path: str = "") -> Optional[Dict[str,
                     trial.suggest_float(key, domain.lower, domain.upper)
             else:
                 raise ValueError(
-                    "Optuna search does not support parameters of type "
-                    "`{}` with samplers of type `{}`".format(type(domain).__name__, type(domain.sampler).__name__)
+                    f"Optuna search does not support parameters of type `{type(domain).__name__}` with samplers of type `{type(domain.sampler).__name__}`"
                 )
         elif isinstance(domain, sample.Integer):
             if isinstance(sampler, sample.LogUniform):
-                trial.suggest_int(key, domain.lower, domain.upper - int(bool(not quantize)), log=True)
+                trial.suggest_int(
+                    key,
+                    domain.lower,
+                    domain.upper - int(not quantize),
+                    log=True,
+                )
             elif isinstance(sampler, sample.Uniform):
                 # Upper bound should be inclusive for quantization and
                 # exclusive otherwise
                 trial.suggest_int(
                     key,
                     domain.lower,
-                    domain.upper - int(bool(not quantize)),
+                    domain.upper - int(not quantize),
                     step=quantize or 1,
                 )
         elif isinstance(domain, sample.Categorical):
@@ -113,7 +114,7 @@ def define_by_run_func(trial, space: Dict, path: str = "") -> Optional[Dict[str,
                     domain.choices = list(range(len(domain.categories)))
                 choices = domain.choices
                 # This choice needs to be removed from the final config
-                index = trial.suggest_categorical(key + "_choice_", choices)
+                index = trial.suggest_categorical(f"{key}_choice_", choices)
                 choice = domain.categories[index]
                 if isinstance(choice, dict):
                     key += f":{index}"
@@ -121,8 +122,7 @@ def define_by_run_func(trial, space: Dict, path: str = "") -> Optional[Dict[str,
                     config.update(define_by_run_func(trial, choice, key))
         else:
             raise ValueError(
-                "Optuna search does not support parameters of type "
-                "`{}` with samplers of type `{}`".format(type(domain).__name__, type(domain.sampler).__name__)
+                f"Optuna search does not support parameters of type `{type(domain).__name__}` with samplers of type `{type(domain.sampler).__name__}`"
             )
     # Return all constants in a dictionary.
     return config
@@ -202,8 +202,9 @@ def add_cost_to_space(space: Dict, low_cost_point: Dict, choice_cost: Dict):
             if isinstance(domain, dict):
                 low_cost = low_cost_point.get(key, {})
                 choice_cost_list = choice_cost.get(key, {})
-                const = add_cost_to_space(domain, low_cost, choice_cost_list)
-                if const:
+                if const := add_cost_to_space(
+                    domain, low_cost, choice_cost_list
+                ):
                     config[key] = const
             else:
                 config[key] = domain
@@ -219,14 +220,8 @@ def add_cost_to_space(space: Dict, low_cost_point: Dict, choice_cost: Dict):
             domain.const = []
             for i, cat in enumerate(domain.categories):
                 if isinstance(cat, dict):
-                    if isinstance(low_cost, list):
-                        low_cost_dict = low_cost[i]
-                    else:
-                        low_cost_dict = {}
-                    if choice_cost_list:
-                        choice_cost_dict = choice_cost_list[i]
-                    else:
-                        choice_cost_dict = {}
+                    low_cost_dict = low_cost[i] if isinstance(low_cost, list) else {}
+                    choice_cost_dict = choice_cost_list[i] if choice_cost_list else {}
                     domain.const.append(add_cost_to_space(cat, low_cost_dict, choice_cost_dict))
                 else:
                     domain.const.append(None)
@@ -298,10 +293,12 @@ def normalize(
             if value not in domain.categories:
                 # nested
                 if isinstance(value, list):
-                    # low_cost_point list
-                    norm = []
-                    for i, cat in enumerate(domain.categories):
-                        norm.append(normalize(value[i], cat, reference_config[key][i], {}) if recursive else value[i])
+                    norm = [
+                        normalize(value[i], cat, reference_config[key][i], {})
+                        if recursive
+                        else value[i]
+                        for i, cat in enumerate(domain.categories)
+                    ]
                     if len(value) > len(domain.categories):
                         # the low cost index was appended to low_cost_point list
                         index = value[-1]
@@ -348,8 +345,8 @@ def normalize(
         elif str(sampler) == "Normal":
             # N(mean, sd) -> N(0,1)
             config_norm[key] = (value - sampler.mean) / sampler.sd
-        # else:
-        #     config_norm[key] = value
+            # else:
+            #     config_norm[key] = value
     return config_norm
 
 

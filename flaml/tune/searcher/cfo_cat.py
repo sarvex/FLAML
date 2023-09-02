@@ -17,8 +17,7 @@ class FLOW2Cat(FLOW2):
         if lb > self.step:
             self.step = lb * 2
         # upper bound
-        if self.step > self.step_ub:
-            self.step = self.step_ub
+        self.step = min(self.step, self.step_ub)
         self._trunc = self.dim
 
 

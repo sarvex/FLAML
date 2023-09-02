@@ -170,10 +170,7 @@ class ChampionFrontierSearcher(BaseSearcher):
 
     def next_trial(self):
         """Return a trial from the _challenger_list."""
-        next_trial = None
-        if self._challenger_list:
-            next_trial = self._challenger_list.pop()
-        return next_trial
+        return self._challenger_list.pop() if self._challenger_list else None
 
     def _create_trial_from_config(self, config, searcher_trial_id=None):
         if searcher_trial_id is None:
@@ -199,13 +196,13 @@ class ChampionFrontierSearcher(BaseSearcher):
         for k, v in seed_config.items():
             config_domain = self._space[k]
             if isinstance(config_domain, PolynomialExpansionSet):
-                # get candidate configs for hyperparameters of the PolynomialExpansionSet type
-                partial_new_configs = self._generate_independent_hp_configs(k, v, config_domain)
-                if partial_new_configs:
+                if partial_new_configs := self._generate_independent_hp_configs(
+                    k, v, config_domain
+                ):
                     hyperparameter_config_groups.append(partial_new_configs)
                     # does not have searcher_trial_ids
                     searcher_trial_ids_groups.append([])
-            elif isinstance(config_domain, Float) or isinstance(config_domain, Categorical):
+            elif isinstance(config_domain, (Float, Categorical)):
                 # otherwise we need to deal with them in group
                 nonpoly_config[k] = v
                 if k not in self._space_of_nonpoly_hp:
@@ -215,43 +212,49 @@ class ChampionFrontierSearcher(BaseSearcher):
         if nonpoly_config:
             new_searcher_trial_ids = []
             partial_new_nonpoly_configs = []
-            if "CFO" in self._nonpoly_searcher_name:
-                if seed_config_trial_id not in self._searcher_for_nonpoly_hp:
-                    self._searcher_for_nonpoly_hp[seed_config_trial_id] = CFO(
-                        space=self._space_of_nonpoly_hp,
-                        points_to_evaluate=[nonpoly_config],
-                        metric=self.CFO_SEARCHER_METRIC_NAME,
-                    )
-                    # initialize the search in set_search_properties
-                    self._searcher_for_nonpoly_hp[seed_config_trial_id].set_search_properties(
-                        setting={"metric_target": self.CFO_SEARCHER_LARGE_LOSS}
-                    )
-                    # We need to call this for once, such that the seed config in points_to_evaluate will be called
-                    # to be tried
-                    self._searcher_for_nonpoly_hp[seed_config_trial_id].suggest(seed_config_searcher_trial_id)
-                # assuming minimization
-                if self._searcher_for_nonpoly_hp[seed_config_trial_id].metric_target is None:
-                    pseudo_loss = self.CFO_SEARCHER_LARGE_LOSS
-                else:
-                    pseudo_loss = self._searcher_for_nonpoly_hp[seed_config_trial_id].metric_target * 0.95
-                pseudo_result_to_report = {}
-                for k, v in nonpoly_config.items():
-                    pseudo_result_to_report["config/" + str(k)] = v
-                pseudo_result_to_report[self.CFO_SEARCHER_METRIC_NAME] = pseudo_loss
-                pseudo_result_to_report["time_total_s"] = 1
-                self._searcher_for_nonpoly_hp[seed_config_trial_id].on_trial_complete(
-                    seed_config_searcher_trial_id, result=pseudo_result_to_report
-                )
-                while len(partial_new_nonpoly_configs) < self.NUMERICAL_NUM:
-                    # suggest multiple times
-                    new_searcher_trial_id = Trial.generate_id()
-                    new_searcher_trial_ids.append(new_searcher_trial_id)
-                    suggestion = self._searcher_for_nonpoly_hp[seed_config_trial_id].suggest(new_searcher_trial_id)
-                    if suggestion is not None:
-                        partial_new_nonpoly_configs.append(suggestion)
-                logger.info("partial_new_nonpoly_configs %s", partial_new_nonpoly_configs)
-            else:
+            if "CFO" not in self._nonpoly_searcher_name:
                 raise NotImplementedError
+            if seed_config_trial_id not in self._searcher_for_nonpoly_hp:
+                self._searcher_for_nonpoly_hp[seed_config_trial_id] = CFO(
+                    space=self._space_of_nonpoly_hp,
+                    points_to_evaluate=[nonpoly_config],
+                    metric=self.CFO_SEARCHER_METRIC_NAME,
+                )
+                # initialize the search in set_search_properties
+                self._searcher_for_nonpoly_hp[seed_config_trial_id].set_search_properties(
+                    setting={"metric_target": self.CFO_SEARCHER_LARGE_LOSS}
+                )
+                # We need to call this for once, such that the seed config in points_to_evaluate will be called
+                # to be tried
+                self._searcher_for_nonpoly_hp[seed_config_trial_id].suggest(seed_config_searcher_trial_id)
+                # assuming minimization
+            pseudo_loss = (
+                self.CFO_SEARCHER_LARGE_LOSS
+                if self._searcher_for_nonpoly_hp[
+                    seed_config_trial_id
+                ].metric_target
+                is None
+                else self._searcher_for_nonpoly_hp[
+                    seed_config_trial_id
+                ].metric_target
+                * 0.95
+            )
+            pseudo_result_to_report = {
+                f"config/{str(k)}": v for k, v in nonpoly_config.items()
+            }
+            pseudo_result_to_report[self.CFO_SEARCHER_METRIC_NAME] = pseudo_loss
+            pseudo_result_to_report["time_total_s"] = 1
+            self._searcher_for_nonpoly_hp[seed_config_trial_id].on_trial_complete(
+                seed_config_searcher_trial_id, result=pseudo_result_to_report
+            )
+            while len(partial_new_nonpoly_configs) < self.NUMERICAL_NUM:
+                # suggest multiple times
+                new_searcher_trial_id = Trial.generate_id()
+                new_searcher_trial_ids.append(new_searcher_trial_id)
+                suggestion = self._searcher_for_nonpoly_hp[seed_config_trial_id].suggest(new_searcher_trial_id)
+                if suggestion is not None:
+                    partial_new_nonpoly_configs.append(suggestion)
+            logger.info("partial_new_nonpoly_configs %s", partial_new_nonpoly_configs)
             if partial_new_nonpoly_configs:
                 hyperparameter_config_groups.append(partial_new_nonpoly_configs)
                 searcher_trial_ids_groups.append(new_searcher_trial_ids)
@@ -298,8 +301,7 @@ class ChampionFrontierSearcher(BaseSearcher):
             )
         else:
             raise NotImplementedError
-        configs_w_key = [{hp_name: hp_config} for hp_config in configs]
-        return configs_w_key
+        return [{hp_name: hp_config} for hp_config in configs]
 
     def _generate_poly_expansion_sets(
         self,
@@ -317,7 +319,7 @@ class ChampionFrontierSearcher(BaseSearcher):
         candidate_configs = [set(seed_interactions) | set(item) for item in space]
         final_candidate_configs = []
         for c in candidate_configs:
-            new_c = set([e for e in c if len(e) > 1])
+            new_c = {e for e in c if len(e) > 1}
             final_candidate_configs.append(new_c)
         return final_candidate_configs
 
@@ -359,15 +361,14 @@ class ChampionFrontierSearcher(BaseSearcher):
             """Remove duplicates in an interaction string"""
             if len(s) == len(set(s)):
                 return s
-            else:
-                # return ''.join(sorted(set(s)))
-                new_s = ""
-                char_list = []
-                for i in s:
-                    if i not in char_list:
-                        char_list.append(i)
-                        new_s += i
-                return new_s
+            # return ''.join(sorted(set(s)))
+            new_s = ""
+            char_list = []
+            for i in s:
+                if i not in char_list:
+                    char_list.append(i)
+                    new_s += i
+            return new_s
 
         interactions = seed_interactions.copy()
         all_interactions = []

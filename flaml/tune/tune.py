@@ -100,8 +100,7 @@ class ExperimentAnalysis(EA):
                 )
             )[0]
             feasible_index = feasible_index.take(feasible_index_filter)
-        best_trial = trials[feasible_index[-1]]
-        return best_trial
+        return trials[feasible_index[-1]]
 
     def get_best_trial(
         self,
@@ -110,11 +109,11 @@ class ExperimentAnalysis(EA):
         scope: str = "last",
         filter_nan_and_inf: bool = True,
     ) -> Optional[Trial]:
-        if self.lexico_objectives is not None:
-            best_trial = self.lexico_best(self.trials)
-        else:
-            best_trial = super().get_best_trial(metric, mode, scope, filter_nan_and_inf)
-        return best_trial
+        return (
+            self.lexico_best(self.trials)
+            if self.lexico_objectives is not None
+            else super().get_best_trial(metric, mode, scope, filter_nan_and_inf)
+        )
 
     @property
     def best_result(self) -> Dict:
@@ -191,7 +190,7 @@ def report(_metric=None, **kwargs):
     if INCUMBENT_RESULT in result["config"]:
         del result["config"][INCUMBENT_RESULT]
     for key, value in trial.config.items():
-        result["config/" + key] = value
+        result[f"config/{key}"] = value
     _runner.process_trial_result(trial, result)
     if _verbose > 2:
         logger.info(f"result: {result}")
